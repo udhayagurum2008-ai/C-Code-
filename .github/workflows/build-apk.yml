@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Generate icon.svg and setup Android project
-        run: |
+        run: |        f.write('pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }\nrootProject.name = \"C-Code-\"\ninclude(\":app\")\n')
           python3 -c "
           import os, shutil
 
@@ -30,7 +30,7 @@ jobs:
                   shutil.copy(a, os.path.join(base, 'app/src/main/assets', a))
 
           with open(os.path.join(base, 'settings.gradle.kts'), 'w') as f:
-              f.write('pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); m        f.write('pluginManagement {\n  repositories {\n    google()\n    mavenCentral()\n    gradlePluginPortal()\n  }\n}\n\ndependencyResolutionManagement {\n  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)\n  repositories {\n    google()\n    mavenCentral()\n  }\n}\n\nrootProject.name = "C-Code"\ninclude(":app")\n')avenCentral() } }\nrootProject.name = \"C-Code-Lab\"\ninclude(\":app\")\n')
+              
 
           with open(os.path.join(base, 'build.gradle.kts'), 'w') as f:
               f.write('plugins { id(\"com.android.application\") version \"8.7.2\" apply false }\n')
