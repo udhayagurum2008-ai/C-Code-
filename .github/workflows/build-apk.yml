@@ -1,4 +1,5 @@
 name: Build Android APK
+
 on:
   push:
     branches: [ main ]
@@ -11,11 +12,151 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unpack Android project and icon
+      - name: Generate icon.svg and setup Android project
         run: |
-          echo "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjggMTI4Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciPjxzdG9wIHN0b3AtY29sb3I9IiM2M2U2YzIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4M2FhZmYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgcng9IjMwIiBmaWxsPSIjMTAxODI3Ii8+PHJlY3QgeD0iMTIiIHk9IjEyIiB3aWR0aD0iMTA0IiBoZWlnaHQ9IjEwNCIgcng9IjI0IiBmaWxsPSJ1cmwoI2cpIi8+PHBhdGggZD0iTTc4IDM5YTMxIDMxIDAgMSAwIDAgNTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzA4MTUxYyIgc3Ryb2tlLXdpZHRoPSIxMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0ibTg3IDQzIDEzLTEybS0xMyA1NCAxMyAxMiIgc3Ryb2tlPSIjMDgxNTFjIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPg==" | base64 -d > icon.svg
-          mkdir -p android-app
-          echo "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" | base64 -d | tar -xzf - -C android-app
+          cat << 'EOF' > setup_project.py
+import os, shutil
+
+icon_content = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#007acc" rx="20"/>
+  <text x="50" y="65" font-size="50" font-weight="bold" fill="white" text-anchor="middle">C</text>
+</svg>'''
+
+with open("icon.svg", "w", encoding="utf-8") as f:
+    f.write(icon_content.strip())
+
+base_dir = "android-app"
+os.makedirs(os.path.join(base_dir, "app", "src", "main", "java", "com", "udhayaguru", "ccodelab"), exist_ok=True)
+os.makedirs(os.path.join(base_dir, "app", "src", "main", "res", "values"), exist_ok=True)
+os.makedirs(os.path.join(base_dir, "app", "src", "main", "assets"), exist_ok=True)
+
+for asset in ["index.html", "manifest.webmanifest", "sw.js"]:
+    if os.path.exists(asset):
+        shutil.copy(asset, os.path.join(base_dir, "app", "src", "main", "assets", asset))
+
+with open(os.path.join(base_dir, "settings.gradle.kts"), "w", encoding="utf-8") as f:
+    f.write("""pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "C-Code-Lab"
+include(":app")
+""")
+
+with open(os.path.join(base_dir, "build.gradle.kts"), "w", encoding="utf-8") as f:
+    f.write("""plugins {
+    id("com.android.application") version "8.7.2" apply false
+}
+""")
+
+with open(os.path.join(base_dir, "gradle.properties"), "w", encoding="utf-8") as f:
+    f.write("""org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+""")
+
+with open(os.path.join(base_dir, "app", "build.gradle.kts"), "w", encoding="utf-8") as f:
+    f.write("""plugins {
+    id("com.android.application")
+}
+
+android {
+    namespace = "com.udhayaguru.ccodelab"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.udhayaguru.ccodelab"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.webkit:webkit:1.12.0")
+}
+""")
+
+with open(os.path.join(base_dir, "app", "src", "main", "AndroidManifest.xml"), "w", encoding="utf-8") as f:
+    f.write("""<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application
+        android:allowBackup="true"
+        android:label="C-Code Lab"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.CCodeLab">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+""")
+
+with open(os.path.join(base_dir, "app", "src", "main", "res", "values", "styles.xml"), "w", encoding="utf-8") as f:
+    f.write("""<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.CCodeLab" parent="Theme.AppCompat.Light.NoActionBar">
+    </style>
+</resources>
+""")
+
+with open(os.path.join(base_dir, "app", "src", "main", "java", "com", "udhayaguru", "ccodelab", "MainActivity.java"), "w", encoding="utf-8") as f:
+    f.write("""package com.udhayaguru.ccodelab;
+
+import android.os.Bundle;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        WebView webView = new WebView(this);
+        setContentView(webView);
+
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setAllowFileAccess(true);
+        webSettings.setAllowContentAccess(true);
+
+        webView.setWebViewClient(new WebViewClient());
+        webView.loadUrl("file:///android_asset/index.html");
+    }
+}
+""")
+EOF
+          python3 setup_project.py
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -25,12 +166,16 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
 
       - name: Build Debug APK
         working-directory: ./android-app
-        run: gradle assembleDebug
+        run: |
+          gradle assembleDebug
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/C-Code-Lab.apk || true
 
-      - name: Upload Compiled APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: C-Code-Lab-Android-APK
