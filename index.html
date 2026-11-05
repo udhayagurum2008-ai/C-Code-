@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C Code Lab — Learn · Practice · Improve</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#101827">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0b1220; color: #e2e8f0; display: flex; flex-direction: column; min-height: 100vh; }
+    header { background: #101827; border-bottom: 1px solid #1e293b; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    header h1 { font-size: 1.3rem; color: #63e6c2; font-weight: 700; letter-spacing: 0.5px; }
+    .install-btn { background: #63e6c2; color: #0b1220; border: none; padding: 0.5rem 1rem; font-weight: 600; border-radius: 6px; cursor: pointer; transition: opacity 0.2s; display: none; }
+    .install-btn:hover { opacity: 0.9; }
+    .layout { display: flex; flex: 1; }
+    sidebar { width: 260px; background: #0f172a; border-right: 1px solid #1e293b; padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    sidebar a { color: #94a3b8; text-decoration: none; padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.95rem; transition: all 0.2s; }
+    sidebar a:hover, sidebar a.active { background: #1e293b; color: #63e6c2; font-weight: 600; }
+    sidebar .section-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin: 1rem 0 0.25rem 0.8rem; }
+    main { flex: 1; padding: 2rem; max-width: 900px; margin: 0 auto; width: 100%; }
+    .content-section { display: none; }
+    .content-section.active { display: block; }
+    h2 { color: #63e6c2; margin-bottom: 1rem; border-bottom: 2px solid #1e293b; padding-bottom: 0.5rem; font-size: 1.6rem; }
+    h3 { color: #f8fafc; margin: 1.2rem 0 0.5rem; font-size: 1.2rem; }
+    p { line-height: 1.6; color: #cbd5e1; margin-bottom: 1rem; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .code-container { position: relative; background: #070d19; border: 1px solid #1e293b; border-radius: 6px; margin: 1rem 0; overflow: hidden; }
+    pre { padding: 1rem; overflow-x: auto; font-family: "Fira Code", Monaco, Consolas, monospace; font-size: 0.9rem; color: #63e6c2; line-height: 1.4; }
+    .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+    .copy-btn:hover { color: #63e6c2; border-color: #63e6c2; }
+    .btn { background: #63e6c2; color: #0b1220; border: none; padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 0.5rem; }
+    .btn-secondary { background: #334155; color: #cbd5e1; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.85rem; cursor: pointer; margin-top: 0.5rem; }
+    .hint-box { background: #0f172a; border-left: 3px solid #63e6c2; padding: 0.8rem; margin-top: 0.8rem; display: none; font-size: 0.9rem; color: #94a3b8; }
+    .quiz-q { margin-bottom: 1.5rem; background: #1e293b; padding: 1rem; border-radius: 8px; }
+    .quiz-options { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+    .quiz-options label { background: #0f172a; padding: 0.6rem; border-radius: 4px; cursor: pointer; border: 1px solid #334155; font-size: 0.95rem; }
+    .quiz-options label:hover { border-color: #63e6c2; }
+    #quiz-result { margin-top: 1rem; font-weight: bold; font-size: 1.2rem; color: #63e6c2; }
+    @media (max-width: 768px) {
+      .layout { flex-direction: column; }
+      sidebar { width: 100%; border-right: none; border-bottom: 1px solid #1e293b; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>C CODE LAB — Learn · Practice · Improve</h1>
+    <button id="install-btn" class="install-btn">Install App</button>
+  </header>
+  <div class="layout">
+    <sidebar>
+      <a href="#overview" class="nav-link active" onclick="showSection('overview')">Overview</a>
+      <div class="section-title">12 Lessons</div>
+      <a href="#lesson1" class="nav-link" onclick="showSection('lesson1')">1. What is C?</a>
+      <a href="#lesson2" class="nav-link" onclick="showSection('lesson2')">2. Syntax & Hello World</a>
+      <a href="#lesson3" class="nav-link" onclick="showSection('lesson3')">3. Variables & Data Types</a>
+      <a href="#lesson4" class="nav-link" onclick="showSection('lesson4')">4. Input & Output</a>
+      <a href="#lesson5" class="nav-link" onclick="showSection('lesson5')">5. Operators</a>
+      <a href="#lesson6" class="nav-link" onclick="showSection('lesson6')">6. Control Flow</a>
+      <a href="#lesson7" class="nav-link" onclick="showSection('lesson7')">7. Loops</a>
+      <a href="#lesson8" class="nav-link" onclick="showSection('lesson8')">8. Functions</a>
+      <a href="#lesson9" class="nav-link" onclick="showSection('lesson9')">9. Arrays</a>
+      <a href="#lesson10" class="nav-link" onclick="showSection('lesson10')">10. Strings</a>
+      <a href="#lesson11" class="nav-link" onclick="showSection('lesson11')">11. Structures</a>
+      <a href="#lesson12" class="nav-link" onclick="showSection('lesson12')">12. Pointers</a>
+      <div class="section-title">Practice & Quiz</div>
+      <a href="#practice" class="nav-link" onclick="showSection('practice')">Practice Challenges</a>
+      <a href="#quiz" class="nav-link" onclick="showSection('quiz')">C Quiz</a>
+      <a href="#about" class="nav-link" onclick="showSection('about')">About C</a>
+    </sidebar>
+    <main>
+      <!-- Overview -->
+      <section id="overview" class="content-section active">
+        <h2>Welcome to C Code Lab</h2>
+        <p>C Code Lab is your comprehensive progressive web application for mastering C programming. Explore 12 structured lessons, test your code comprehension, solve practice challenges with guided hints, and verify your knowledge with our 8-question C programming quiz.</p>
+        <div class="card">
+          <h3>Getting Started</h3>
+          <p>Select a lesson from the sidebar to begin learning C concepts step-by-step. Each lesson contains clear explanations and copyable code snippets.</p>
+        </div>
+      </section>
+
+      <!-- Lesson 1 -->
+      <section id="lesson1" class="content-section">
+        <h2>1. What is C?</h2>
+        <p>C is a powerful general-purpose procedural programming language created by Dennis Ritchie in 1972 at Bell Labs. It is widely used for system programming, operating systems, compilers, and embedded hardware.</p>
+        <div class="card">
+          <h3>Key Features</h3>
+          <p>High efficiency, low-level memory manipulation, structured programming, portability across platforms, and a simple core language syntax.</p>
+        </div>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>// Basic structure of a C Program
+#include &lt;stdio.h&gt;
+
+int main() {
+    // C execution starts here
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 2 -->
+      <section id="lesson2" class="content-section">
+        <h2>2. Syntax & Hello World</h2>
+        <p>Every C program begins execution in the <code>main()</code> function. Header files like <code>stdio.h</code> provide standard input/output functions like <code>printf()</code>.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    printf("Hello, World!\n");
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 3 -->
+      <section id="lesson3" class="content-section">
+        <h2>3. Variables & Data Types</h2>
+        <p>Variables store data values. C supports primitive types like <code>int</code>, <code>float</code>, <code>double</code>, and <code>char</code>.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int age = 25;
+    float price = 19.99;
+    char grade = 'A';
+    
+    printf("Age: %d, Price: %.2f, Grade: %c\n", age, price, grade);
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 4 -->
+      <section id="lesson4" class="content-section">
+        <h2>4. Input & Output</h2>
+        <p>The <code>printf()</code> function outputs data to standard output, while <code>scanf()</code> reads formatted input from the user using memory addresses (<code>&amp;</code>).</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int num;
+    printf("Enter an integer: ");
+    scanf("%d", &amp;num);
+    printf("You entered: %d\n", num);
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 5 -->
+      <section id="lesson5" class="content-section">
+        <h2>5. Operators</h2>
+        <p>C includes arithmetic (<code>+ - * / %</code>), relational (<code>== != &gt; &lt;</code>), and logical (<code>&amp;&amp; || !</code>) operators.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int a = 10, b = 3;
+    printf("Sum: %d\n", a + b);
+    printf("Remainder: %d\n", a % b);
+    printf("Is Equal: %d\n", a == b);
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 6 -->
+      <section id="lesson6" class="content-section">
+        <h2>6. Control Flow</h2>
+        <p>Use <code>if</code>, <code>else if</code>, <code>else</code>, and <code>switch</code> statements to perform decision-making logic in C.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int score = 85;
+    if (score &gt;= 90) {
+        printf("Grade A\n");
+    } else if (score &gt;= 80) {
+        printf("Grade B\n");
+    } else {
+        printf("Grade C\n");
+    }
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 7 -->
+      <section id="lesson7" class="content-section">
+        <h2>7. Loops</h2>
+        <p>Loops execute a block of statements repeatedly. Common loops are <code>for</code>, <code>while</code>, and <code>do-while</code>.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    // For Loop
+    for (int i = 1; i &lt;= 5; i++) {
+        printf("Count: %d\n", i);
+    }
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 8 -->
+      <section id="lesson8" class="content-section">
+        <h2>8. Functions</h2>
+        <p>Functions divide code into reusable modular blocks. A function defines a return type, parameter list, and body.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    int result = add(5, 7);
+    printf("Result: %d\n", result);
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 9 -->
+      <section id="lesson9" class="content-section">
+        <h2>9. Arrays</h2>
+        <p>An array is a fixed-size sequential collection of elements of the same data type stored in contiguous memory locations.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int numbers[5] = {10, 20, 30, 40, 50};
+    for (int i = 0; i &lt; 5; i++) {
+        printf("Element %d: %d\n", i, numbers[i]);
+    }
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 10 -->
+      <section id="lesson10" class="content-section">
+        <h2>10. Strings</h2>
+        <p>In C, strings are arrays of characters terminated by a null character (<code>'\0'</code>). <code>string.h</code> provides utility functions like <code>strlen()</code> and <code>strcpy()</code>.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main() {
+    char name[] = "C Code Lab";
+    printf("Name: %s\n", name);
+    printf("Length: %lu\n", strlen(name));
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 11 -->
+      <section id="lesson11" class="content-section">
+        <h2>11. Structures</h2>
+        <p>A structure (<code>struct</code>) allows grouping variables of different data types into a single custom compound type.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+struct Student {
+    int id;
+    char name[50];
+    float gpa;
+};
+
+int main() {
+    struct Student s1 = {101, "Alice", 3.8};
+    printf("Student %s (ID: %d) GPA: %.2f\n", s1.name, s1.id, s1.gpa);
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Lesson 12 -->
+      <section id="lesson12" class="content-section">
+        <h2>12. Pointers</h2>
+        <p>A pointer is a variable that stores the memory address of another variable. Use <code>&amp;</code> to get an address and <code>*</code> to dereference.</p>
+        <div class="code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          <pre><code>#include &lt;stdio.h&gt;
+
+int main() {
+    int val = 42;
+    int *ptr = &amp;val;
+
+    printf("Value: %d\n", val);
+    printf("Address: %p\n", (void*)ptr);
+    printf("Dereferenced: %d\n", *ptr);
+    return 0;
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Practice Challenges -->
+      <section id="practice" class="content-section">
+        <h2>Practice Challenges</h2>
+        <div class="card">
+          <h3>Challenge 1: Reverse an Array</h3>
+          <p>Write a C function to reverse an integer array in-place.</p>
+          <button class="btn-secondary" onclick="toggleHint('hint1')">Show Hint</button>
+          <div id="hint1" class="hint-box">Use two pointers (start and end) swapping elements until start &gt;= end.</div>
+        </div>
+        <div class="card">
+          <h3>Challenge 2: Fibonacci Sequence</h3>
+          <p>Generate the first N terms of the Fibonacci sequence using a loop.</p>
+          <button class="btn-secondary" onclick="toggleHint('hint2')">Show Hint</button>
+          <div id="hint2" class="hint-box">Keep track of the previous two numbers: t1 = 0, t2 = 1, nextTerm = t1 + t2.</div>
+        </div>
+        <div class="card">
+          <h3>Challenge 3: Pointer Swap</h3>
+          <p>Implement a function <code>void swap(int *a, int *b)</code> that swaps two integers.</p>
+          <button class="btn-secondary" onclick="toggleHint('hint3')">Show Hint</button>
+          <div id="hint3" class="hint-box">Use a temporary variable <code>int temp = *a; *a = *b; *b = temp;</code>.</div>
+        </div>
+      </section>
+
+      <!-- C Quiz -->
+      <section id="quiz" class="content-section">
+        <h2>C Programming Quiz</h2>
+        <p>Test your C knowledge with this 8-question quiz!</p>
+        <form id="quiz-form">
+          <div class="quiz-q">
+            <p><strong>1. Who is known as the creator of C language?</strong></p>
+            <div class="quiz-options">
+              <label><input type="radio" name="q1" value="0"> Bjarne Stroustrup</label>
+              <label><input type="radio" name="q1" value="1"> Dennis Ritchie</label>
+              <label><input type="radio" name="q1" value="0"> James Gosling</label>
+            </div>
+          </div>
+          <div class="quiz-q">
+            <p><strong>2. Which header file is required for printf() and scanf()?</strong></p>
+            <div class="quiz-options">
+              <label><input type="radio" name="q2" value="1"> stdio.h</label>
+              <label><input type="radio" name="q2" value="0"> stdlib.h</label>
+              <label><input type="radio" name="q2" value="0"> string.h</label>
+            </div>
+          </div>
+          <div class="quiz-q">
+            <p><strong>3. What format specifier is used to print an integer in C?</strong></p>
+            <div class="quiz-options">
+              <label><input type="radio" name="q3" value="0"> %f</label>
+              <label><input type="radio" name="q3" value="1"> %d</label>
+              <label><input type="radio" name="q3" value="0"> %s</label>
+            </div>
+          </div>
+          <div class="quiz-q">
+            <p><strong>4. What symbol is used to access the address of a variable?</strong></p>
+            <div class="quiz-options">
+              <label><input type="radio" name="q4" value="1"> &amp;</label>
+              <label><input type="radio" name="q4" value="0"> *</label>
+              <label><input type="radio" name="q4" value="0"> #</label>
+            </div>
+          </div>
+          <div class="quiz-q">
+            <p><strong>5. Which character terminates every string in C?</strong></p>
+            <div class="quiz-options">
+              <label><input type="radio" name="q5" value="0"> \n</label>
+              <label><input type="radio" name="q5" value="1"> \0</label>
+              <label><input type="radio" name="q5" value="0"> \t</label>
+            </div>
+          </div>
+          <div class="quiz-q">
+            <p><strong>6. What keyword is used to define custom structure types?</strong></p>
+            <div class="quiz-options">
+              <label><input type="radio" name="q6" value="1"> struct</label>
+              <label><input type="radio" name="q6" value="0"> class</label>
+              <label><input type="radio" name="q6" value="0"> object</label>
+            </div>
+          </div>
+          <div class="quiz-q">
+            <p><strong>7. What is the result of 10 % 3 in C?</strong></p>
+            <div class="quiz-options">
+              <label><input type="radio" name="q7" value="0"> 3</label>
+              <label><input type="radio" name="q7" value="1"> 1</label>
+              <label><input type="radio" name="q7" value="0"> 0</label>
+            </div>
+          </div>
+          <div class="quiz-q">
+            <p><strong>8. A pointer variable holds which type of data?</strong></p>
+            <div class="quiz-options">
+              <label><input type="radio" name="q8" value="0"> Floating point value</label>
+              <label><input type="radio" name="q8" value="1"> Memory address</label>
+              <label><input type="radio" name="q8" value="0"> Character string</label>
+            </div>
+          </div>
+          <button type="button" class="btn" onclick="submitQuiz()">Submit Quiz</button>
+        </form>
+        <div id="quiz-result"></div>
+      </section>
+
+      <!-- About C -->
+      <section id="about" class="content-section">
+        <h2>About C</h2>
+        <div class="card">
+          <h3>History &amp; Overview</h3>
+          <p>C was developed in 1972 by Dennis Ritchie at Bell Laboratories for the Unix operating system. It became one of the most widely adopted programming languages in computing history, directly influencing languages such as C++, Java, C#, and JavaScript.</p>
+        </div>
+        <div class="card">
+          <h3>Standard Libraries</h3>
+          <p>C relies heavily on standard libraries: <code>stdio.h</code> (I/O operations), <code>stdlib.h</code> (memory allocation &amp; utilities), <code>string.h</code> (string handling), and <code>math.h</code> (mathematical functions).</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    function showSection(id) {
+      document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+      document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+      const activeSec = document.getElementById(id);
+      if (activeSec) activeSec.classList.add('active');
+      const activeLink = document.querySelector(`sidebar a[href="#${id}"]`);
+      if (activeLink) activeLink.classList.add('active');
+    }
+
+    function toggleHint(id) {
+      const h = document.getElementById(id);
+      if (h) h.style.display = h.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function copyCode(btn) {
+      const code = btn.nextElementSibling.innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.innerText = 'Copied!';
+        setTimeout(() => btn.innerText = 'Copy', 2000);
+      }).catch(() => {
+        btn.innerText = 'Copied!';
+        setTimeout(() => btn.innerText = 'Copy', 2000);
+      });
+    }
+
+    function submitQuiz() {
+      let score = 0;
+      for (let i = 1; i <= 8; i++) {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        if (selected && selected.value === "1") {
+          score++;
+        }
+      }
+      document.getElementById('quiz-result').innerText = `Your Score: ${score} / 8`;
+    }
+
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('install-btn');
+      if (btn) btn.style.display = 'block';
+    });
+
+    document.getElementById('install-btn')?.addEventListener('click', () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => {
+          deferredPrompt = null;
+          document.getElementById('install-btn').style.display = 'none';
+        });
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(() => {
+          console.log('Service Worker Registered');
+        }).catch(err => console.log('SW Registration Failed', err));
+      });
+    }
+  </script>
+</body>
+</html>
