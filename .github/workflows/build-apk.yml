@@ -14,149 +14,42 @@ jobs:
 
       - name: Generate icon.svg and setup Android project
         run: |
-          cat << 'EOF' > setup_project.py
-import os, shutil
+          python3 -c "
+          import os, shutil
 
-icon_content = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" fill="#007acc" rx="20"/>
-  <text x="50" y="65" font-size="50" font-weight="bold" fill="white" text-anchor="middle">C</text>
-</svg>'''
+          with open('icon.svg', 'w') as f:
+              f.write('<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"#007acc\" rx=\"20\"/><text x=\"50\" y=\"65\" font-size=\"50\" font-weight=\"bold\" fill=\"white\" text-anchor=\"middle\">C</text></svg>')
 
-with open("icon.svg", "w", encoding="utf-8") as f:
-    f.write(icon_content.strip())
+          base = 'android-app'
+          os.makedirs(os.path.join(base, 'app/src/main/java/com/udhayaguru/ccodelab'), exist_ok=True)
+          os.makedirs(os.path.join(base, 'app/src/main/res/values'), exist_ok=True)
+          os.makedirs(os.path.join(base, 'app/src/main/assets'), exist_ok=True)
 
-base_dir = "android-app"
-os.makedirs(os.path.join(base_dir, "app", "src", "main", "java", "com", "udhayaguru", "ccodelab"), exist_ok=True)
-os.makedirs(os.path.join(base_dir, "app", "src", "main", "res", "values"), exist_ok=True)
-os.makedirs(os.path.join(base_dir, "app", "src", "main", "assets"), exist_ok=True)
+          for a in ['index.html', 'manifest.webmanifest', 'sw.js']:
+              if os.path.exists(a):
+                  shutil.copy(a, os.path.join(base, 'app/src/main/assets', a))
 
-for asset in ["index.html", "manifest.webmanifest", "sw.js"]:
-    if os.path.exists(asset):
-        shutil.copy(asset, os.path.join(base_dir, "app", "src", "main", "assets", asset))
+          with open(os.path.join(base, 'settings.gradle.kts'), 'w') as f:
+              f.write('pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }\nrootProject.name = \"C-Code-Lab\"\ninclude(\":app\")\n')
 
-with open(os.path.join(base_dir, "settings.gradle.kts"), "w", encoding="utf-8") as f:
-    f.write("""pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+          with open(os.path.join(base, 'build.gradle.kts'), 'w') as f:
+              f.write('plugins { id(\"com.android.application\") version \"8.7.2\" apply false }\n')
 
-rootProject.name = "C-Code-Lab"
-include(":app")
-""")
+          with open(os.path.join(base, 'gradle.properties'), 'w') as f:
+              f.write('org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8\nandroid.useAndroidX=true\n')
 
-with open(os.path.join(base_dir, "build.gradle.kts"), "w", encoding="utf-8") as f:
-    f.write("""plugins {
-    id("com.android.application") version "8.7.2" apply false
-}
-""")
+          with open(os.path.join(base, 'app/build.gradle.kts'), 'w') as f:
+              f.write('plugins { id(\"com.android.application\") }\nandroid { namespace = \"com.udhayaguru.ccodelab\"\ncompileSdk = 34\ndefaultConfig { applicationId = \"com.udhayaguru.ccodelab\"\nminSdk = 24\ntargetSdk = 34\nversionCode = 1\nversionName = \"1.0\" }\ncompileOptions { sourceCompatibility = JavaVersion.VERSION_17\ntargetCompatibility = JavaVersion.VERSION_17 } }\ndependencies { implementation(\"androidx.appcompat:appcompat:1.7.0\")\nimplementation(\"androidx.webkit:webkit:1.12.0\") }\n')
 
-with open(os.path.join(base_dir, "gradle.properties"), "w", encoding="utf-8") as f:
-    f.write("""org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
-android.useAndroidX=true
-""")
+          with open(os.path.join(base, 'app/src/main/AndroidManifest.xml'), 'w') as f:
+              f.write('<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n<uses-permission android:name=\"android.permission.INTERNET\" />\n<application android:allowBackup=\"true\" android:label=\"C-Code Lab\" android:supportsRtl=\"true\" android:theme=\"@style/Theme.CCodeLab\">\n<activity android:name=\".MainActivity\" android:exported=\"true\">\n<intent-filter>\n<action android:name=\"android.intent.action.MAIN\" />\n<category android:name=\"android.intent.category.LAUNCHER\" />\n</intent-filter>\n</activity>\n</application>\n</manifest>\n')
 
-with open(os.path.join(base_dir, "app", "build.gradle.kts"), "w", encoding="utf-8") as f:
-    f.write("""plugins {
-    id("com.android.application")
-}
+          with open(os.path.join(base, 'app/src/main/res/values/styles.xml'), 'w') as f:
+              f.write('<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n<style name=\"Theme.CCodeLab\" parent=\"Theme.AppCompat.Light.NoActionBar\">\n</style>\n</resources>\n')
 
-android {
-    namespace = "com.udhayaguru.ccodelab"
-    compileSdk = 34
-
-    defaultConfig {
-        applicationId = "com.udhayaguru.ccodelab"
-        minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
-
-dependencies {
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.webkit:webkit:1.12.0")
-}
-""")
-
-with open(os.path.join(base_dir, "app", "src", "main", "AndroidManifest.xml"), "w", encoding="utf-8") as f:
-    f.write("""<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET" />
-    <application
-        android:allowBackup="true"
-        android:label="C-Code Lab"
-        android:supportsRtl="true"
-        android:theme="@style/Theme.CCodeLab">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
-""")
-
-with open(os.path.join(base_dir, "app", "src", "main", "res", "values", "styles.xml"), "w", encoding="utf-8") as f:
-    f.write("""<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.CCodeLab" parent="Theme.AppCompat.Light.NoActionBar">
-    </style>
-</resources>
-""")
-
-with open(os.path.join(base_dir, "app", "src", "main", "java", "com", "udhayaguru", "ccodelab", "MainActivity.java"), "w", encoding="utf-8") as f:
-    f.write("""package com.udhayaguru.ccodelab;
-
-import android.os.Bundle;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import androidx.appcompat.app.AppCompatActivity;
-
-public class MainActivity extends AppCompatActivity {
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        WebView webView = new WebView(this);
-        setContentView(webView);
-
-        WebSettings webSettings = webView.getSettings();
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-        webSettings.setAllowFileAccess(true);
-        webSettings.setAllowContentAccess(true);
-
-        webView.setWebViewClient(new WebViewClient());
-        webView.loadUrl("file:///android_asset/index.html");
-    }
-}
-""")
-EOF
-          python3 setup_project.py
+          with open(os.path.join(base, 'app/src/main/java/com/udhayaguru/ccodelab/MainActivity.java'), 'w') as f:
+              f.write('package com.udhayaguru.ccodelab;\nimport android.os.Bundle;\nimport android.webkit.WebSettings;\nimport android.webkit.WebView;\nimport android.webkit.WebViewClient;\nimport androidx.appcompat.app.AppCompatActivity;\npublic class MainActivity extends AppCompatActivity {\n@Override\nprotected void onCreate(Bundle savedInstanceState) {\nsuper.onCreate(savedInstanceState);\nWebView webView = new WebView(this);\nsetContentView(webView);\nWebSettings webSettings = webView.getSettings();\nwebSettings.setJavaScriptEnabled(true);\nwebSettings.setDomStorageEnabled(true);\nwebSettings.setAllowFileAccess(true);\nwebSettings.setAllowContentAccess(true);\nwebView.setWebViewClient(new WebViewClient());\nwebView.loadUrl(\"file:///android_asset/index.html\");\n}\n}\n')
+          "
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
