@@ -1,0 +1,2478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Let’s play with C</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f3f5f2; --panel:#ffffff; --ink:#1b2420; --muted:#66736c; --line:#d5dcd7;
+  --accent:#1f6f54; --accent-ink:#ffffff; --err:#b3261e; --out-bg:#101a15; --out-ink:#d7f2e2;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1512; --panel:#161e1a; --ink:#e3ece6; --muted:#8a9a91; --line:#26332c;
+    --accent:#5fd0a0; --accent-ink:#0b1a13; --err:#ff8a80; --out-bg:#0a100d; --out-ink:#d7f2e2;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1512; --panel:#161e1a; --ink:#e3ece6; --muted:#8a9a91; --line:#26332c;
+  --accent:#5fd0a0; --accent-ink:#0b1a13; --err:#ff8a80; --out-bg:#0a100d; --out-ink:#d7f2e2;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;color:var(--ink);font:400 15px/1.5 "IBM Plex Sans",system-ui,sans-serif;min-height:100vh;
+  background:
+    radial-gradient(color-mix(in srgb,var(--ink) 9%,transparent) 1px,transparent 1.2px) 0 0/26px 26px,
+    radial-gradient(900px 620px at 8% -8%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 62%),
+    radial-gradient(800px 600px at 100% 105%,color-mix(in srgb,var(--accent) 16%,transparent),transparent 62%),
+    radial-gradient(500px 400px at 85% 8%,color-mix(in srgb,#4a7fd6 14%,transparent),transparent 65%),
+    linear-gradient(var(--bg),var(--bg));
+  background-attachment:fixed}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.app{max-width:1100px;margin:0 auto;padding:16px;display:grid;gap:12px}
+header{display:flex;flex-direction:column;align-items:center;gap:14px}
+.toolbar{display:flex;align-items:center;justify-content:flex-end;gap:12px;width:100%}
+.toolbar button.run{padding:11px 36px;font-size:16px;font-weight:700;letter-spacing:.16em;transform:translateY(0);box-shadow:0 6px 0 color-mix(in srgb,var(--accent) 50%,#000),0 14px 24px -8px color-mix(in srgb,var(--accent) 70%,transparent)}
+.toolbar button.run:hover{transform:translateY(-2px);filter:brightness(1.08);box-shadow:0 8px 0 color-mix(in srgb,var(--accent) 50%,#000),0 18px 28px -8px color-mix(in srgb,var(--accent) 75%,transparent)}
+.toolbar button.run:active{transform:translateY(5px);filter:none;box-shadow:0 1px 0 color-mix(in srgb,var(--accent) 50%,#000),0 4px 8px -4px color-mix(in srgb,var(--accent) 60%,transparent)}
+.toolbar select{border-radius:999px;padding:9px 16px;background:color-mix(in srgb,var(--panel) 84%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+h1{font-size:36px;margin:56px 0 8px;font-weight:700;letter-spacing:-.02em;text-align:center;transform-origin:center;background:linear-gradient(90deg,var(--accent),#4a7fd6);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+h1.jiggle{animation:jiggle .8s ease-in-out}
+h1{position:relative;z-index:5}
+h1.dance{animation:dance .6s ease-in-out 4}
+@keyframes dance{0%,100%{transform:translateY(0) rotate(0) scale(1)}15%{transform:translateY(-18px) rotate(-6deg) scale(1.08)}30%{transform:translateY(0) rotate(5deg)}45%{transform:translateY(-14px) rotate(6deg) scale(1.08)}60%{transform:translateY(0) rotate(-4deg)}80%{transform:translateY(-8px) rotate(3deg)}}
+h1.fall{animation:fall 2.4s ease-in-out}
+@keyframes fall{0%{transform:translateY(0) rotate(0)}22%{transform:translateY(0) rotate(-8deg)}45%{transform:translateY(110px) rotate(24deg)}60%{transform:translateY(100px) rotate(20deg)}100%{transform:translateY(0) rotate(0)}}
+#face{font-size:60px;line-height:64px;height:64px;text-align:center}
+#face.pop{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.newbtn{margin-right:auto;border-radius:999px;padding:10px 24px;font-weight:700;font-size:15px;color:var(--accent);border:2px solid var(--accent);background:color-mix(in srgb,var(--panel) 84%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+.newbtn:hover{background:var(--accent);color:var(--accent-ink)}
+.newbtn[hidden]{display:none}
+.cheer{position:fixed;left:50%;top:16%;transform:translateX(-50%);z-index:60;font:700 30px "IBM Plex Sans",sans-serif;color:var(--accent);background:color-mix(in srgb,var(--panel) 88%,transparent);padding:10px 26px;border-radius:999px;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);pointer-events:none;animation:cheer 2.2s forwards}
+@keyframes cheer{0%{opacity:0;transform:translate(-50%,20px) scale(.8)}15%{opacity:1;transform:translate(-50%,0) scale(1.05)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-10px)}}
+@keyframes jiggle{0%,100%{transform:rotate(0) scale(1)}15%{transform:rotate(-5deg) scale(1.08)}30%{transform:rotate(4deg) scale(1.08)}45%{transform:rotate(-3deg) scale(1.05)}60%{transform:rotate(2deg) scale(1.03)}80%{transform:rotate(-1deg) scale(1.01)}}
+select,button{font:inherit;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:7px 12px;cursor:pointer}
+button.run{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#4a7fd6));color:var(--accent-ink);border:0;border-radius:999px;font-weight:600;padding:10px 22px;box-shadow:0 6px 18px -6px color-mix(in srgb,var(--accent) 75%,transparent);transition:transform .15s,box-shadow .15s,filter .15s}
+button.run:hover{transform:translateY(-1px);filter:brightness(1.08);box-shadow:0 10px 24px -6px color-mix(in srgb,var(--accent) 80%,transparent)}
+button.run:active{transform:translateY(0) scale(.97)}
+button.run kbd{font:500 11px "IBM Plex Mono",ui-monospace,monospace;background:color-mix(in srgb,var(--accent-ink) 18%,transparent);border-radius:6px;padding:2px 7px}
+button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px;min-height:68vh}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.pane{background:color-mix(in srgb,var(--panel) 84%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 10px 40px -18px color-mix(in srgb,var(--accent) 45%,transparent);border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.pane h2{position:relative;font-size:17px;margin:0;padding:13px 12px 14px;border-bottom:1px solid var(--line);color:var(--ink);font-weight:700;letter-spacing:.01em;text-align:center;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 14%,transparent),color-mix(in srgb,#4a7fd6 14%,transparent))}
+.pane h2::after{content:"";position:absolute;left:50%;bottom:-1px;width:64px;height:3px;transform:translateX(-50%);border-radius:3px;background:linear-gradient(90deg,var(--accent),#4a7fd6)}
+.pane h2{display:flex;align-items:center;justify-content:center;gap:14px}
+.bubble{width:30px;height:30px;padding:0;border-radius:50%;display:inline-grid;place-items:center;border:1px solid;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.bubble.light{background:#ffffff;color:#c98a00;border-color:#e3dcc6;box-shadow:0 3px 8px -2px rgba(0,0,0,.28)}
+.bubble.dark{background:#141b17;color:#f0e29a;border-color:#33433a;box-shadow:0 3px 8px -2px rgba(0,0,0,.5)}
+.bubble:hover{transform:scale(1.12)}
+.bubble:active{transform:scale(.92)}
+.bubble[aria-pressed="true"]{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 60%,transparent)}
+.editor{display:flex;flex:1;min-height:340px}
+.gutter{font:400 13px/1.55 "IBM Plex Mono",ui-monospace,monospace;color:var(--muted);text-align:right;padding:12px 8px;border-right:1px solid var(--line);user-select:none;white-space:pre;overflow:hidden}
+textarea{font:400 13px/1.55 "IBM Plex Mono",ui-monospace,monospace;flex:1;border:0;resize:none;padding:12px;background:transparent;color:var(--ink);tab-size:4;white-space:pre;overflow:auto;min-width:0}
+textarea.stdin{min-height:90px;flex:none;border-top:0}
+pre#out{margin:0;padding:12px;background:var(--out-bg);color:var(--out-ink);font:400 13px/1.55 "IBM Plex Mono",ui-monospace,monospace;min-height:200px;white-space:pre-wrap;word-break:break-word;flex:1;overflow:auto}
+pre#out .err{color:var(--err)}
+pre#out input{font:inherit;color:inherit;background:transparent;border:0;outline:none;box-shadow:none;border-radius:0;padding:0;margin:0;width:1ch;min-width:1ch;max-width:100%;caret-color:var(--out-ink)}
+.status{padding:6px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+.right{display:grid;gap:12px;grid-template-rows:1fr}
+.note{font-size:12px;color:var(--muted)}
+.editor .gutter{font:500 15px/1.6 "IBM Plex Mono",ui-monospace,monospace;padding:14px 10px;color:var(--muted)}
+.code-wrap{position:relative;flex:1;min-width:0;display:flex}
+.hl,.code-wrap textarea#code{font:500 15px/1.6 "IBM Plex Mono",ui-monospace,monospace;padding:14px;margin:0;border:0;tab-size:4;white-space:pre;letter-spacing:0}
+.hl{position:absolute;inset:0;overflow:hidden;pointer-events:none;color:var(--ink);--c-io:#c2410c;--c-type:#1d4ed8;--c-ctl:#7e22ce;--c-str:#15803d;--c-num:#b45309;--c-com:#6b7a72;--c-pre:#be185d}
+:root[data-theme="dark"] .hl{--c-io:#ffb454;--c-type:#62b6ff;--c-ctl:#d6a0ff;--c-str:#8ee6a4;--c-num:#ffd37a;--c-com:#7f9187;--c-pre:#ff8fb3}
+.hl .c-io{color:var(--c-io)}.hl .c-type{color:var(--c-type)}.hl .c-ctl{color:var(--c-ctl)}.hl .c-str{color:var(--c-str)}.hl .c-num{color:var(--c-num)}.hl .c-pre{color:var(--c-pre)}.hl .c-com{color:var(--c-com);font-style:italic}
+.code-wrap textarea#code{position:relative;z-index:1;flex:1;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--ink);background:transparent}
+.code-wrap textarea#code::selection{background:color-mix(in srgb,var(--accent) 35%,transparent);-webkit-text-fill-color:transparent}
+:root[data-theme="light"]{--bg:#f4f6fa;--panel:#ffffff;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--accent:#2563eb;--accent-ink:#ffffff;--err:#dc2626;--out-bg:#0b1220;--out-ink:#e2e8f0}
+:root[data-theme="dark"]{--bg:#080d17;--panel:#0f1624;--ink:#e6edf7;--muted:#8a99b0;--line:#1c2638;--accent:#5b9dff;--accent-ink:#06101f;--err:#ff7b72;--out-bg:#060a12;--out-ink:#dbe7f5}
+:root[data-theme="dark"] .hl{--c-io:#fbbf77;--c-type:#7cc4ff;--c-ctl:#c4a8ff;--c-str:#86efac;--c-num:#fcd34d;--c-com:#64748b;--c-pre:#f9a8d4}
+body{background:radial-gradient(900px 420px at 50% -80px,color-mix(in srgb,var(--accent) 16%,transparent),transparent 70%),linear-gradient(var(--bg),var(--bg));background-attachment:fixed}
+#bg{opacity:.4}
+*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 45%,transparent) transparent}
+.app{max-width:1180px;padding:20px 20px 28px;gap:16px}
+h1{font-size:34px;margin:40px 0 0;letter-spacing:-.035em;background:linear-gradient(100deg,var(--ink) 60%,var(--accent));-webkit-background-clip:text;background-clip:text}
+.sub{margin:-6px 0 0;color:var(--muted);font-size:14px;letter-spacing:.01em;text-align:center}
+#face{font-size:44px;line-height:52px;height:52px}
+header{gap:8px}
+.toolbar button.run{padding:11px 30px;font-size:14px;letter-spacing:.14em;border-radius:10px;background:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.25),0 10px 22px -10px color-mix(in srgb,var(--accent) 80%,transparent)}
+.toolbar button.run:hover{transform:translateY(-1px);filter:brightness(1.08);box-shadow:0 1px 2px rgba(0,0,0,.25),0 14px 26px -10px color-mix(in srgb,var(--accent) 85%,transparent)}
+.toolbar button.run:active{transform:translateY(1px);filter:none}
+.newbtn{border-radius:10px;font-size:14px;padding:10px 20px}
+.pane{border-radius:14px;background:var(--panel);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 1px 2px rgba(15,23,42,.05),0 18px 40px -22px rgba(15,23,42,.35)}
+.pane h2{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding:12px;background:color-mix(in srgb,var(--ink) 3%,var(--panel))}
+.pane h2::after{width:40px;height:2px;background:var(--accent)}
+.bubble{width:28px;height:28px}
+.editor .gutter{font-size:14px;background:color-mix(in srgb,var(--ink) 3%,transparent);padding:14px 12px 14px 14px}
+.hl,.code-wrap textarea#code{font-size:14px}
+pre#out{font-size:14px;padding:16px}
+.status{font:500 12px "IBM Plex Mono",ui-monospace,monospace;padding:8px 14px;background:color-mix(in srgb,var(--ink) 3%,var(--panel))}
+.note{text-align:center;margin:0}
+.menubtn{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:16px;z-index:40;width:42px;height:42px;padding:0;border-radius:12px;display:grid;place-items:center;background:var(--panel);box-shadow:0 1px 2px rgba(15,23,42,.08),0 8px 20px -10px rgba(15,23,42,.35)}
+.menubtn:hover{border-color:var(--accent);color:var(--accent)}
+.scrim{position:fixed;inset:0;z-index:90;background:rgba(5,10,20,.45);opacity:0;transition:opacity .2s}
+.scrim.show{opacity:1}
+.scrim[hidden]{display:none}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(340px,88vw);z-index:100;background:var(--panel);border-left:1px solid var(--line);box-shadow:-20px 0 50px -20px rgba(0,0,0,.45);transform:translateX(105%);visibility:hidden;transition:transform .25s ease,visibility 0s .25s;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.drawer.open{transform:none;visibility:visible;transition:transform .25s ease}
+.dhead{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--line)}
+.dhead strong{font-size:15px}
+.dbtn{font-size:12px;padding:6px 10px;border-radius:8px;margin-left:6px}
+.hist{list-style:none;margin:0;padding:10px;overflow:auto;flex:1}
+.hist li{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;margin-bottom:8px}
+.hist .item{flex:1;text-align:left;padding:10px 12px;border-radius:10px;min-width:0}
+.hist .item:hover,.hist .item.cur{border-color:var(--accent)}
+.hist .t{display:block;font-weight:600;font-size:14px}
+.hist .d{display:block;font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist .del,.hist .ren,.hist .note-btn{width:34px;border-radius:10px;padding:0;color:var(--muted);display:grid;place-items:center}
+.hist .del:hover{color:var(--err);border-color:var(--err)}
+.hist .ren:hover,.hist .note-btn:hover{color:var(--accent);border-color:var(--accent)}
+.hist .note-btn{position:relative}
+.hist .note-btn.has{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.hist .note-btn.has::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--panel)}
+.hist .note-btn[aria-expanded="true"]{background:color-mix(in srgb,var(--accent) 14%,var(--panel));border-color:var(--accent);color:var(--accent)}
+.hist .notepane{flex:0 0 100%;border:1px solid var(--accent);border-radius:12px;background:color-mix(in srgb,var(--accent) 5%,var(--panel));padding:10px;display:flex;flex-direction:column;gap:8px;animation:pop .22s ease-out}
+.hist .notepane .nh{display:flex;align-items:center;gap:8px}
+.hist .notepane .nt{flex:1;min-width:0;font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist .notepane .ns{font-size:11px;color:var(--muted);opacity:0;transition:opacity .2s}
+.hist .notepane .ns.on{opacity:1}
+.hist .notepane textarea{font:400 13px/1.5 "IBM Plex Sans",system-ui,sans-serif;flex:none;width:100%;min-height:96px;max-height:220px;resize:vertical;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel);color:var(--ink);white-space:pre-wrap;overflow:auto}
+.hist .notepane textarea:focus{outline:2px solid var(--accent);outline-offset:0}
+.hist .notepane .nf{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.hist .notepane .nf button{font-size:12px;padding:4px 10px;border-radius:8px}
+.hist .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist input.item{font:600 14px "IBM Plex Sans",system-ui,sans-serif;color:var(--ink);background:var(--panel);border:2px solid var(--accent);outline:none;cursor:text}
+.hist .hint{display:block;font-size:11px;color:var(--muted);padding:2px 4px 10px;text-align:center}
+.hist .empty{display:block;color:var(--muted);font-size:14px;padding:16px 8px;text-align:center}
+
+.right{grid-template-rows:minmax(0,1fr) auto}
+.chat{height:400px}
+.chat h2{gap:10px}
+.chat h2 .face{font-size:22px;line-height:1;display:inline-block}
+.chat h2 .face.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
+.chatlog{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth}
+.msg{max-width:90%;padding:8px 12px;border-radius:14px;font-size:13.5px;line-height:1.5;overflow-wrap:anywhere;animation:msgin .25s ease-out}
+@keyframes msgin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.msg.bot{align-self:flex-start;background:color-mix(in srgb,var(--ink) 6%,var(--panel));border-top-left-radius:4px}
+.msg.oops{background:color-mix(in srgb,var(--err) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--err) 45%,transparent)}
+.msg.yay{background:color-mix(in srgb,var(--accent) 15%,var(--panel));border:1px solid color-mix(in srgb,var(--accent) 45%,transparent)}
+.msg.me{align-self:flex-end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+.msg code{font:500 12px "IBM Plex Mono",ui-monospace,monospace;background:color-mix(in srgb,var(--ink) 11%,transparent);padding:1px 5px;border-radius:5px}
+.msg.me code{background:color-mix(in srgb,var(--accent-ink) 20%,transparent)}
+.msg .fix{margin-top:6px;font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;border:1px solid var(--accent);color:var(--accent);background:var(--panel)}
+.msg .fix:hover:not(:disabled){background:var(--accent);color:var(--accent-ink)}
+.msg .fix:disabled{opacity:.7;cursor:default}
+.msg.typing{display:inline-flex;gap:4px;padding:11px 14px}
+.msg.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:blink 1s infinite}
+.msg.typing i:nth-child(2){animation-delay:.15s}.msg.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+.chips:empty{display:none}
+.chips button{font-size:12px;border-radius:999px;padding:5px 12px}
+.chips button:hover{border-color:var(--accent);color:var(--accent)}
+.chatin{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line)}
+.chatin input{flex:1;min-width:0;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--panel);color:var(--ink)}
+.chatin input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.chatin button{border-radius:10px;background:var(--accent);color:var(--accent-ink);border:0;font-weight:600;padding:0 16px}
+@media(prefers-reduced-motion:reduce){.msg,.chat h2 .face.pop{animation:none}.chatlog{scroll-behavior:auto}}
+
+/* ===== same design, just smaller so it fits in one screen ===== */
+:root{--z:.72}
+html{zoom:var(--z)}
+.app{max-width:1700px;padding:8px 20px 8px;gap:8px;--bd:#000}
+:root[data-theme="dark"] .app{--bd:#e6edf7}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .app{--bd:#e6edf7}}
+.pane{border:2px solid var(--bd)}
+.pane h2{border-bottom:2px solid var(--bd)}
+.status{border-top:2px solid var(--bd)}
+.chatin{border-top:2px solid var(--bd)}
+.editor .gutter{border-right:2px solid var(--bd)}
+.chatin input{border:2px solid var(--bd)}
+header{gap:4px}
+h1{margin:10px 0 0}
+#face{font-size:36px;line-height:40px;height:40px}
+.menubtn{top:calc(10px + env(safe-area-inset-top,0px))}
+@media(min-width:801px){
+  html,body{height:100%;overflow:hidden}
+  body{min-height:0}
+  .app{height:calc(100dvh / var(--z));grid-template-rows:auto minmax(0,1fr) auto}
+  .grid{min-height:0;height:100%}
+  .pane{min-height:0}
+  .editor{min-height:0;overflow:hidden}
+  .right{min-height:0;grid-template-rows:minmax(0,1fr) minmax(0,1.15fr)}
+  .chat{height:auto}
+}
+@media(max-width:800px){:root{--z:.85}}
+.editor .gutter,.hl,.code-wrap textarea#code{font-size:18px}
+pre#out{font-size:17px}
+.pane h2{font-size:14px}
+.status{font-size:14px}
+.msg{font-size:16px}
+.msg code{font-size:14px}
+.chatin input{font-size:16px}
+.chatin button{font-size:16px}
+.chips button{font-size:14px}
+.sub{font-size:16px}
+h1{font-size:60px;line-height:1.05;font-weight:800;letter-spacing:-.03em;margin:6px 0 0;background:linear-gradient(90deg,#ff3d81,#ff9f1c,#2ecc71,#00c2ff,#7c4dff,#ff3d81);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;filter:drop-shadow(0 3px 10px rgba(124,77,255,.35));animation:hue 6s linear infinite}
+@keyframes hue{to{background-position:250% 0}}
+h1.jiggle{animation:jiggle .8s ease-in-out}
+h1.dance{animation:dance .6s ease-in-out 4}
+h1.fall{animation:fall 2.4s ease-in-out}
+.menubtn{width:52px;height:52px;border-radius:14px;background:var(--accent);color:var(--accent-ink);border:2px solid #000;box-shadow:0 4px 0 #000,0 10px 22px -6px rgba(0,0,0,.45)}
+.menubtn svg{width:28px;height:28px}
+.menubtn:hover{background:var(--accent);color:var(--accent-ink);filter:brightness(1.12);transform:translateY(-1px)}
+.menubtn:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
+.note{font-size:13px}
+
+/* ===== professional chat ===== */
+.chat h2{justify-content:flex-start;text-align:left;text-transform:none;letter-spacing:0;gap:12px;padding:10px 14px;background:linear-gradient(100deg,color-mix(in srgb,var(--accent) 22%,var(--panel)),var(--panel))}
+.chat h2::after{display:none}
+.chat h2 .face{width:42px;height:42px;font-size:24px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),#7c4dff);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.chat .who{display:flex;flex-direction:column;flex:1;gap:2px;line-height:1.15}
+.chat .who b{font-size:17px;font-weight:700;color:var(--ink)}
+.chat .who small{font-size:12px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:6px}
+.chat .dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.25)}
+.chat .clr{width:34px;height:34px;padding:0;border-radius:10px;font-size:15px;display:grid;place-items:center}
+.chat .clr:hover{border-color:var(--accent)}
+.chatlog{padding:14px;gap:12px;background:color-mix(in srgb,var(--ink) 2.5%,var(--panel))}
+.row{display:flex;gap:8px;align-items:flex-end}
+.row.me{justify-content:flex-end}
+.row .av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px;background:linear-gradient(135deg,var(--accent),#7c4dff)}
+.row .msg{max-width:calc(100% - 44px);box-shadow:0 1px 2px rgba(15,23,42,.12)}
+.msg{border-radius:16px;padding:9px 13px;line-height:1.55}
+.msg.bot{background:var(--panel);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-bottom-left-radius:4px}
+.msg.me{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 55%,#7c4dff));border-bottom-right-radius:4px}
+.msg .ts{display:block;font-size:10.5px;opacity:.55;margin-top:4px;text-align:right}
+.msg.typing{border-radius:16px;border-bottom-left-radius:4px}
+.cb{position:relative;margin:8px 0 2px;border-radius:10px;overflow:hidden;background:var(--out-bg);border:1px solid color-mix(in srgb,var(--ink) 25%,transparent)}
+.cb pre{margin:0;padding:12px;overflow:auto;color:var(--out-ink);font:500 13px/1.55 "IBM Plex Mono",ui-monospace,monospace;white-space:pre}
+.cb .cp{position:absolute;top:6px;right:6px;font-size:11px;padding:2px 9px;border-radius:7px;background:rgba(255,255,255,.12);color:#e6edf7;border:1px solid rgba(255,255,255,.25)}
+.cb .cp:hover{background:var(--accent);color:var(--accent-ink)}
+.chips{padding:2px 12px 10px;gap:7px}
+.chips button{border:1.5px solid color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 8%,var(--panel));font-weight:500}
+.chatin{padding:10px 12px;background:var(--panel)}
+.chatin input{border-radius:999px;padding:9px 16px}
+.chatin button{border-radius:999px;padding:0 20px;background:linear-gradient(135deg,var(--accent),#7c4dff);color:#fff}
+
+/* ===== bigger fonts ===== */
+.editor .gutter,.hl,.code-wrap textarea#code{font-size:21px}
+pre#out{font-size:20px}
+.pane h2{font-size:17px}
+.status{font-size:16px}
+.sub{font-size:18px}
+h1{font-size:64px}
+.toolbar button.run{font-size:17px}
+.newbtn{font-size:16px}
+.msg{font-size:18px}
+.msg code{font-size:16px}
+.msg .ts{font-size:12px}
+.cb pre{font-size:16px}
+.cb .cp{font-size:13px}
+.chat .who b{font-size:20px}
+.chat .who small{font-size:14px}
+.chips button{font-size:16px}
+.chatin input{font-size:18px}
+.chatin button{font-size:18px}
+.note{font-size:15px}
+.hist .t{font-size:16px}.hist .d{font-size:14px}.dhead strong{font-size:17px}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<button id="menuBtn" class="menubtn" aria-label="Saved programs" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+<div id="scrim" class="scrim" hidden></div>
+<aside id="drawer" class="drawer" aria-hidden="true" aria-label="Saved programs"><div class="dhead"><strong>My programs</strong><div><button id="clearAll" class="dbtn">Clear all</button><button id="closeDrawer" class="dbtn" aria-label="Close">✕</button></div></div><ul id="hist" class="hist"></ul></aside>
+<div class="app">
+  <header>
+    <h1 id="title">Let’s play with C</h1>
+    <p class="sub">Write, run and debug C code right in your browser</p>
+    <div id="face" aria-hidden="true"></div>
+    <div class="toolbar">
+      <button class="newbtn" id="newBtn" hidden>＋ New</button><button class="run" id="run"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>RUN</button>
+    </div>
+  </header>
+  <div class="grid">
+    <section class="pane">
+      <h2><button class="bubble light" id="lightBtn" aria-label="Light mode" title="Light mode" aria-pressed="false"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button><span>Do the program</span><button class="bubble dark" id="darkBtn" aria-label="Dark mode" title="Dark mode" aria-pressed="false"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button></h2>
+      <div class="editor">
+        <div class="gutter" id="gutter">1</div>
+        <div class="code-wrap"><pre class="hl" id="hl" aria-hidden="true"></pre><textarea id="code" spellcheck="false" aria-label="C source code"></textarea></div>
+      </div>
+    </section>
+    <div class="right">
+      
+      <section class="pane">
+        <h2>Let’s check the output</h2>
+        <pre id="out" aria-live="polite">Press Run to see output here.</pre>
+        <div class="status" id="status">Ready</div>
+      </section>
+      <section class="pane chat" aria-label="Code buddy chat">
+        <h2><span class="face" id="botFace" aria-hidden="true">🤖</span><span class="who"><b>Code buddy</b><small><i class="dot"></i>C tutor · online</small></span><button type="button" id="botClear" class="clr" title="Clear chat" aria-label="Clear chat">🗑</button></h2>
+        <div class="chatlog" id="chatLog" role="log" aria-live="polite"></div>
+        <div class="chips" id="chips"></div>
+        <form class="chatin" id="chatForm" autocomplete="off"><input id="chatText" type="text" placeholder="Chat with your Code buddy…" aria-label="Message to Code buddy" maxlength="300"><button type="button" id="chatSend">Send</button></form>
+      </section>
+    </div>
+  </div>
+  <p class="note">Runs entirely in your browser using a C/C++ interpreter, so it covers common teaching-level C (loops, functions, arrays, structs, printf, scanf) but isn’t a full GCC build. When a program asks for input, type it in the output box and press Enter (Ctrl+D ends input).</p>
+</div>
+<script>
+const samples = {
+"Sum of two numbers (uses stdin)": `#include <stdio.h>
+
+int main() {
+    int a, b;
+    printf("Enter two numbers: ");
+    scanf("%d %d", &a, &b);
+    printf("Sum = %d\\n", a + b);
+    return 0;
+}
+`,
+"Fibonacci": `#include <stdio.h>
+
+int fib(int n) {
+    if (n < 2) return n;
+    return fib(n - 1) + fib(n - 2);
+}
+
+int main() {
+    for (int i = 0; i < 10; i++) {
+        printf("%d ", fib(i));
+    }
+    printf("\\n");
+    return 0;
+}
+`,
+"Array and pointers": `#include <stdio.h>
+
+int main() {
+    int nums[5] = {4, 8, 15, 16, 23};
+    int total = 0;
+    for (int i = 0; i < 5; i++) {
+        total += nums[i];
+    }
+    printf("Total: %d, average: %.2f\\n", total, total / 5.0);
+    return 0;
+}
+`
+};
+const $ = id => document.getElementById(id);
+const code = $('code'), gutter = $('gutter'), out = $('out'), status = $('status');
+
+
+function load(name){ code.value = samples[name]; lines(); }
+
+function lines(){
+  highlight();
+  const n = code.value.split('\n').length;
+  gutter.textContent = Array.from({length:n}, (_, i) => i + 1).join('\n');
+  gutter.scrollTop = code.scrollTop;
+  if (typeof botSchedule === 'function') botSchedule();
+}
+const hl = $('hl');
+function highlight(){
+  const src = code.value;
+  const re = /(\/\/[^\n]*|\/\*[\s\S]*?(?:\*\/|(?![\s\S])))|("(?:\\.|[^"\\\n])*"?|'(?:\\.|[^'\\\n])*'?)|(^[ \t]*#[^\n]*)|\b(else\s+if|if|else|for|while|do|switch|case|default|break|continue|return|goto)\b|\b(int|char|float|double|long|short|void|unsigned|signed|struct|union|enum|typedef|const|static|size_t|bool)\b|\b(printf|scanf|fprintf|fscanf|sprintf|sscanf|puts|gets|fgets|putchar|getchar|fputs)\b|\b(0x[0-9a-fA-F]+|\d+\.?\d*(?:[eE][+-]?\d+)?[fFlLuU]*)\b/gm;
+  let html = '', last = 0, m;
+  while ((m = re.exec(src))) {
+    html += esc(src.slice(last, m.index));
+    const cls = m[1] ? 'c-com' : m[2] ? 'c-str' : m[3] ? 'c-pre' : m[4] ? 'c-ctl' : m[5] ? 'c-type' : m[6] ? 'c-io' : 'c-num';
+    html += '<span class="' + cls + '">' + esc(m[0]) + '</span>';
+    last = re.lastIndex;
+  }
+  hl.innerHTML = html + esc(src.slice(last)) + '\n';
+}
+code.addEventListener('input', lines);
+code.addEventListener('scroll', () => { gutter.scrollTop = code.scrollTop; hl.scrollTop = code.scrollTop; hl.scrollLeft = code.scrollLeft; });
+const pairs = {'(':')','[':']','{':'}','"':'"',"'":"'"};
+const closers = [')',']','}'];
+function insertAt(start, end, text, caret){
+  code.focus();
+  code.setSelectionRange(start, end);
+  let ok = false;
+  try { ok = document.execCommand('insertText', false, text); } catch (_) {}
+  if (!ok) { code.setRangeText(text, start, end, 'end'); }
+  code.setSelectionRange(caret, caret);
+  lines();
+}
+code.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const s = code.selectionStart, en = code.selectionEnd, v = code.value, k = e.key;
+  const next = v[en], prev = v[s - 1];
+  if (Object.prototype.hasOwnProperty.call(pairs, k)) {
+    if (s !== en) { e.preventDefault(); insertAt(s, en, k + v.slice(s, en) + pairs[k], en + 1); return; }
+    if (k === '"' || k === "'") {
+      if (next === k) { e.preventDefault(); code.setSelectionRange(s + 1, s + 1); return; }
+      if (prev && /\w/.test(prev)) return;
+    }
+    e.preventDefault(); insertAt(s, en, k + pairs[k], s + 1); return;
+  }
+  if (closers.includes(k) && s === en && next === k) { e.preventDefault(); code.setSelectionRange(s + 1, s + 1); return; }
+  if (k === 'Backspace' && s === en && prev !== undefined && pairs[prev] === next) { e.preventDefault(); insertAt(s - 1, s + 1, '', s - 1); return; }
+  if (k === 'Enter' && s === en && prev === '{' && next === '}') {
+    e.preventDefault();
+    const ind = v.slice(v.lastIndexOf('\n', s - 1) + 1, s).match(/^\s*/)[0];
+    insertAt(s, en, '\n' + ind + '  \n' + ind, s + 1 + ind.length + 2);
+  }
+});
+code.addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = code.selectionStart;
+    code.value = code.value.slice(0, s) + '  ' + code.value.slice(code.selectionEnd);
+    code.selectionStart = code.selectionEnd = s + 2;
+    lines();
+  }
+});
+const isHdr = t => /^(\}\s*)?else$/.test(t) || /^do$/.test(t) || /^(\}\s*)?(else\s+)?(if|for|while|switch)\b.*\)$/.test(t);
+code.addEventListener('keydown', e => {
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+  const s = code.selectionStart, en = code.selectionEnd, v = code.value;
+  const ls = v.lastIndexOf('\n', s - 1) + 1, cur = v.slice(ls, s);
+  if (e.key === '}' && s === en && /^[ \t]+$/.test(cur)) {
+    e.preventDefault();
+    const ind = cur.length >= 2 ? cur.slice(0, cur.length - 2) : '';
+    insertAt(ls, s, ind + '}', ls + ind.length + 1); return;
+  }
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const strip = x => x.replace(/\/\/.*$/, '').trim();
+  const t = strip(cur);
+  let ind = cur.match(/^[ \t]*/)[0];
+  if (/\{$/.test(t) || /^(case\b[^:]*|default\s*):$/.test(t) || isHdr(t)) ind += '  ';
+  else if (/;$/.test(t)) {
+    let k = ls, cind = ind.length;
+    for (let n = 0; n < 6 && k > 0; n++) {
+      const pe = k - 1, ps = v.lastIndexOf('\n', pe - 1) + 1, pl = v.slice(ps, pe), pt = strip(pl);
+      if (!pt) { k = ps; continue; }
+      const pi = pl.match(/^[ \t]*/)[0].length;
+      if (isHdr(pt) && pi < cind) { ind = pl.match(/^[ \t]*/)[0]; cind = pi; k = ps; } else break;
+    }
+  }
+  insertAt(s, en, '\n' + ind, s + 1 + ind.length);
+});
+function esc(s){ return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+class NeedInput{}
+function runC(src,stdin,write,eofFinal){
+const BRK={},CNT={};
+class Ret{constructor(v){this.v=v}}
+class Exit{constructor(c){this.c=c}}
+const D=()=>Object.create(null);
+const t0=Date.now();let steps=0;
+const tick=()=>{if(++steps%100000===0&&Date.now()-t0>5000)throw new Error('Stopped: the program ran for more than 5 seconds (possible infinite loop).')};
+const defs={};
+const fm={};src=src.replace(/^[ \t]*#[ \t]*define[ \t]+(\w+)\(([^)]*)\)[ \t]*(.*)$/gm,(m,n,ps,b)=>{fm[n]={ps:ps.split(',').map(x=>x.trim()).filter(Boolean),b};return ''});
+let guard=0;for(let r=0;r<3;r++)for(const n in fm){const re=new RegExp('\\b'+n+'\\s*\\(','g');let m;while((m=re.exec(src))&&guard++<5000){let i=re.lastIndex,d=1,as=[],cur='';for(;i<src.length;i++){const c=src[i];if(c==='(')d++;else if(c===')'){d--;if(d===0)break}if(c===','&&d===1){as.push(cur);cur=''}else cur+=c}as.push(cur);let body=fm[n].b;fm[n].ps.forEach((pn,k)=>{body=body.replace(new RegExp('\\b'+pn+'\\b','g'),()=>(as[k]||'').trim())});src=src.slice(0,m.index)+body+src.slice(i+1);re.lastIndex=m.index}}
+src=src.replace(/^[ \t]*#[ \t]*define[ \t]+(\w+)[ \t]+(.*)$/gm,(m,n,v)=>{defs[n]=v.trim();return ''}).replace(/^[ \t]*#.*$/gm,'');
+for(const n in defs)src=src.replace(new RegExp('\\b'+n+'\\b','g'),defs[n]);
+const toks=[];
+{const re=/(\s+|\/\/[^\n]*|\/\*[\s\S]*?\*\/)|(0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?[fFlLuU]*)|([A-Za-z_]\w*)|("(?:\\.|[^"\\\n])*")|('(?:\\.|[^'\\\n])+')|(<<=|>>=|\+\+|--|->|<<|>>|<=|>=|==|!=|&&|\|\||[-+*\/%&|^]=|[-+*\/%=<>!~&|^?:;,.(){}\[\]])/g;
+let m,last=0,line=1;
+while((m=re.exec(src))){
+if(m.index!==last)break;
+last=re.lastIndex;
+if(m[1]){line+=(m[1].match(/\n/g)||[]).length;continue}
+if(m[2])toks.push({k:'n',v:m[2],line});
+else if(m[3])toks.push({k:'i',v:m[3],line});
+else if(m[4])toks.push({k:'s',v:m[4].slice(1,-1),line});
+else if(m[5])toks.push({k:'c',v:m[5].slice(1,-1),line});
+else toks.push({k:'p',v:m[6],line});
+}
+if(last!==src.length)throw new Error('Line '+line+': unexpected character "'+src[last]+'"');}
+const T={n:'\n',t:'\t',r:'\r',a:'\x07',b:'\b',f:'\f',v:'\v'};
+const unesc=s=>s.replace(/\\(x[0-9a-fA-F]{1,2}|[0-7]{1,3}|.)/g,(m,c)=>{if(c.length===1&&T[c]!==undefined)return T[c];if(c[0]==='x'&&c.length>1)return String.fromCharCode(parseInt(c.slice(1),16));if(/^[0-7]/.test(c))return String.fromCharCode(parseInt(c,8));return c});
+const S2=s=>{const a=[];for(const ch of s)a.push(ch.charCodeAt(0));a.push(0);return a};
+const P=(a,i)=>({a,i}),ptr=v=>Array.isArray(v)?P(v,0):v;
+const chk=q=>{if(!q||typeof q!=='object')throw new Error('null pointer dereference')};
+const P2=(v,n)=>{const q=ptr(v);chk(q);return P(q.a,q.i+n)};
+const clone=v=>{if(Array.isArray(v))return v.map(clone);if(v&&v.$s){const o={$s:1};for(const k in v)if(k!=='$s')o[k]=clone(v[k]);return o}return v};
+const eq=(x,y)=>{if(x===y)return true;if(x&&y&&typeof x==='object'&&typeof y==='object'){const p=ptr(x),q=ptr(y);return p.a===q.a&&p.i===q.i}return false};
+const cstr=v=>{if(!v||typeof v!=='object')return '(null)';const a=Array.isArray(v)?v:v.a;let i=Array.isArray(v)?0:v.i,s='';for(;i<a.length&&a[i];i++)s+=String.fromCharCode(a[i]);return s};
+const wr=(d,s)=>{const q=ptr(d);chk(q);let i=q.i;for(const ch of s)q.a[i++]=ch.charCodeAt(0);q.a[i]=0};
+function fmt(f,args){let ai=0;return f.replace(/%([-+ 0#]*)(\d+|\*)?(?:\.(\d+|\*))?(?:hh|h|ll|l|z|j|t|L)?([diuoxXeEfgGcsp%])/g,(m,fl,w,pr,c)=>{
+if(c==='%')return '%';
+if(w==='*')w=args[ai++];if(pr==='*')pr=args[ai++];
+const a=args[ai++];let s;
+switch(c){
+case 'd':case 'i':s=String(Math.trunc(a));break;
+case 'u':s=a<0?String(a>>>0):String(Math.trunc(a));break;
+case 'x':s=(Math.trunc(a)>>>0).toString(16);break;
+case 'X':s=(Math.trunc(a)>>>0).toString(16).toUpperCase();break;
+case 'o':s=(Math.trunc(a)>>>0).toString(8);break;
+case 'f':case 'F':s=Number(a).toFixed(pr==null?6:+pr);break;
+case 'e':case 'E':s=Number(a).toExponential(pr==null?6:+pr).replace(/e([+-])(\d)$/,'e$10$2');if(c==='E')s=s.toUpperCase();break;
+case 'g':case 'G':{const pp=pr==null?6:(+pr||1);if(a===0)s='0';else{const ex=Math.floor(Math.log10(Math.abs(a)));s=(ex<-4||ex>=pp)?a.toExponential(pp-1).replace(/\.?0+e/,'e').replace(/e([+-])(\d)$/,'e$10$2'):String(+a.toPrecision(pp))}break}
+case 'c':s=String.fromCharCode(a);break;
+case 's':s=cstr(a);if(pr!=null)s=s.slice(0,+pr);break;
+case 'p':s='0x'+(typeof a==='object'&&a?(a.i||0)+4096:0).toString(16);break;}
+const num='diuoxXeEfFgG'.includes(c);
+if(num&&!/^[-+]/.test(s)){if(fl.includes('+'))s='+'+s;else if(fl.includes(' '))s=' '+s}
+if(w){w=+w;if(fl.includes('-'))s=s.padEnd(w);else if(fl.includes('0')&&num){const sg=/^[-+ ]/.test(s)?s[0]:'';s=sg+s.slice(sg.length).padStart(w-sg.length,'0')}else s=s.padStart(w)}
+return s})}
+const inp=stdin||'';let ip=0;let rs=(window.__seed>>>0)||1;
+const ls=[0];for(let i=0;i<inp.length-1;i++)if(inp[i]==='\n')ls.push(i+1);let ech=0;
+const echo=()=>{while(ech<ls.length&&ip>ls[ech]){write(inp.slice(ls[ech],ls[ech+1]===undefined?inp.length:ls[ech+1]));ech++}};
+const G=D(),ts0=D();let ts=ts0;let tw=D();const fnames=new Set();const wrapFor=(ty,ptr)=>{if(ptr||ty.f||ty.st||ty.vd)return null;const s=ty.sz;if(s===1)return ty.un?x=>x&255:x=>(x<<24)>>24;if(s===2)return ty.un?x=>x&65535:x=>(x<<16)>>16;if(s===4)return ty.un?x=>x>>>0:x=>x|0;return null};
+const def=(n,v,f)=>{G[n]={v};ts0[n]=!!f};
+def('NULL',0);def('EOF',-1);def('true',1);def('false',0);def('INT_MAX',2147483647);def('INT_MIN',-2147483648);def('UINT_MAX',4294967295);def('LONG_MAX',9007199254740991);def('RAND_MAX',32767);def('M_PI',Math.PI,1);def('stdin',0);def('stdout',0);def('stderr',0);
+const funcs=D(),ft=D(),ff=D(),structs=D(),td=D();let anon=0,curRet={f:false,ptr:0,vd:false};
+const mk=name=>{const o={$s:1};for(const f of structs[name]){if(f.dims.length)o[f.n]=arr(f.dims.map(d=>d(G)),0,f.st&&!f.ptr?f.st:null);else o[f.n]=(f.st&&!f.ptr)?mk(f.st):0}return o};
+const arr=(dims,d,st)=>Array.from({length:dims[d]},()=>d+1<dims.length?arr(dims,d+1,st):(st?mk(st):0));
+function fill(v,iv){if(v&&v.$s){Object.keys(v).filter(k=>k!=='$s').forEach((k,i)=>{if(iv[i]!==undefined){if(Array.isArray(v[k])&&Array.isArray(iv[i]))fill(v[k],iv[i]);else v[k]=iv[i]}});return}
+for(let i=0;i<v.length&&i<iv.length;i++){if(Array.isArray(v[i])||(v[i]&&v[i].$s))fill(v[i],iv[i]);else v[i]=iv[i]}}
+const evalInit=(it,env)=>it.lst?it.lst.map(i=>evalInit(i,env)):it.f(env);
+const sizeOf=v=>Array.isArray(v)?v.length*(v.length?sizeOf(v[0]):4):4;
+// ---------- parser
+let p=0;
+const isv=v=>{const t=toks[p];return !!t&&t.v===v&&(t.k==='p'||t.k==='i')};
+const eat=v=>{if(isv(v)){p++;return true}return false};
+const err=(m,prev)=>{const t=prev?toks[p-1]:(toks[p]||toks[toks.length-1]);throw new Error('Line '+(t?t.line:1)+': '+m)};
+const need=v=>{if(!eat(v))err("expected '"+v+"'"+(toks[p]?" but found '"+toks[p].v+"'":' at end of file'),v===';'||v===')'||v===']')};
+const BASE=new Set(['int','char','float','double','long','short','unsigned','signed','void','_Bool','const','static','extern','volatile','register','inline','size_t','bool']);
+const isType=(i=p)=>{const t=toks[i];return !!t&&t.k==='i'&&(BASE.has(t.v)||t.v==='struct'||t.v==='union'||t.v==='enum'||!!td[t.v])};
+const pushS=()=>{ts=Object.create(ts);tw=Object.create(tw)},popS=()=>{ts=Object.getPrototypeOf(ts);tw=Object.getPrototypeOf(tw)};
+const skipP=()=>{if(isv('(')){let d=0;do{if(isv('('))d++;else if(isv(')'))d--;p++}while(d>0&&p<toks.length)}};
+function parseType(){let f=false,st=null,seen=false,sz=4,vd=false,un=false,stat=false;
+for(;;){const t=toks[p];if(!t||t.k!=='i')break;
+if(t.v==='struct'||t.v==='union'){p++;let name=null;if(toks[p]&&toks[p].k==='i')name=toks[p++].v;if(isv('{')){name=name||('$anon'+(anon++));structBody(name)}st=name;seen=true;continue}
+if(t.v==='enum'){p++;if(toks[p]&&toks[p].k==='i')p++;if(isv('{'))enumBody();seen=true;continue}
+if(!seen&&td[t.v]){f=td[t.v].f;st=td[t.v].st;sz=td[t.v].sz||4;un=!!td[t.v].un;p++;seen=true;continue}
+if(BASE.has(t.v)){if(t.v==='unsigned'||t.v==='size_t')un=true;if(t.v==='static')stat=true;if(t.v==='size_t')sz=8;if(t.v==='float'||t.v==='double')f=true;if(t.v==='char')sz=1;else if(t.v==='short')sz=2;else if(t.v==='long'||t.v==='double')sz=8;if(t.v==='void')vd=true;p++;seen=true;continue}
+break}
+if(!seen)err('expected a type');
+return{f,st,sz,vd,un,stat}}
+function structBody(name){need('{');const fl=[];while(!eat('}')){const ty=parseType();do{let ptr=0;while(eat('*'))ptr++;const n=toks[p++].v;const dims=[];while(eat('[')){dims.push(assign().f);need(']')}ff[n]=ty.f;fl.push({n,dims,st:ty.st,ptr})}while(eat(','));need(';')}structs[name]=fl}
+function enumBody(){need('{');let val=0;while(!eat('}')){const n=toks[p++].v;if(eat('='))val=assign().f(G);G[n]={v:val};ts[n]=false;val++;eat(',')}}
+const PR={'||':1,'&&':2,'|':3,'^':4,'&':5,'==':6,'!=':6,'<':7,'>':7,'<=':7,'>=':7,'<<':8,'>>':8,'+':9,'-':9,'*':10,'/':10,'%':10};
+function mkbin(op,l,r,line){const a=l.f,b=r.f,fl=l.fl||r.fl;let f;const num=x=>typeof x==='number';
+switch(op){
+case '||':return{f:e=>a(e)||b(e)?1:0,fl:false};
+case '&&':return{f:e=>a(e)&&b(e)?1:0,fl:false};
+case '+':f=e=>{const x=a(e),y=b(e);if(num(x)&&num(y))return x+y;return num(x)?P2(y,x):P2(x,y)};break;
+case '-':f=e=>{const x=a(e),y=b(e);if(num(x)&&num(y))return x-y;if(num(y))return P2(x,-y);return ptr(x).i-ptr(y).i};break;
+case '*':f=e=>{const x=a(e),y=b(e),r=x*y;if(!fl&&Number.isFinite(r)&&!Number.isSafeInteger(r)&&Number.isInteger(x)&&Number.isInteger(y)&&Math.abs(x)<4294967296&&Math.abs(y)<4294967296)return Number(BigInt.asIntN(32,BigInt(x)*BigInt(y)));return r};break;
+case '/':f=fl?e=>a(e)/b(e):e=>{const y=b(e);if(y===0)throw new Error('Line '+line+': division by zero');return Math.trunc(a(e)/y)};break;
+case '%':f=e=>{const y=b(e);if(y===0)throw new Error('Line '+line+': division by zero');return a(e)%y};break;
+case '==':return{f:e=>eq(a(e),b(e))?1:0,fl:false};
+case '!=':return{f:e=>eq(a(e),b(e))?0:1,fl:false};
+case '<':return{f:e=>a(e)<b(e)?1:0,fl:false};
+case '>':return{f:e=>a(e)>b(e)?1:0,fl:false};
+case '<=':return{f:e=>a(e)<=b(e)?1:0,fl:false};
+case '>=':return{f:e=>a(e)>=b(e)?1:0,fl:false};
+case '&':f=e=>a(e)&b(e);return{f,fl:false};
+case '|':f=e=>a(e)|b(e);return{f,fl:false};
+case '^':f=e=>a(e)^b(e);return{f,fl:false};
+case '<<':f=e=>a(e)<<b(e);return{f,fl:false};
+case '>>':f=e=>a(e)>>b(e);return{f,fl:false};}
+return{f,fl}}
+function bin(min){let l=unary();for(;;){const t=toks[p];if(!t||t.k!=='p'||!(t.v in PR)||PR[t.v]<min)break;p++;const r=bin(PR[t.v]+1);l=mkbin(t.v,l,r,t.line)}return l}
+function cond(){const c=bin(1);if(!eat('?'))return c;const x=assign();need(':');const y=cond();return{f:e=>c.f(e)?x.f(e):y.f(e),fl:x.fl||y.fl}}
+function assign(){const l=cond();const t=toks[p];
+if(t&&t.k==='p'&&/^(?:[-+*\/%&|^]|<<|>>)?=$/.test(t.v)){p++;const r=assign();if(!l.ref)err('invalid assignment target');
+const op=t.v.slice(0,-1);const node=op?mkbin(op,l,r,t.line):r;const lr=l.ref,line=t.line,lfl=l.fl;
+return{f:e=>{const[c,k]=lr(e);let v=node.f(e);if(typeof v==='number'){if(!lfl){v=Math.trunc(v);if(l.wr)v=l.wr(v)}}else if(v&&v.$s)v=clone(v);
+if(Array.isArray(c)&&(k<0||k>=c.length))throw new Error('Line '+line+': array index '+k+' is out of range');c[k]=v;return v},fl:lfl}}
+return l}
+function expr(){let n=assign();while(isv(',')){p++;const a=n,b=assign();n={f:e=>{a.f(e);return b.f(e)},fl:b.fl}}return n}
+function incdec(o,d,pre){if(!o.ref)err('invalid operand');return{f:e=>{const[c,k]=o.ref(e);const old=c[k];let nv=typeof old==='number'?old+d:P2(old,d);if(typeof nv==='number'&&o.wr)nv=o.wr(nv);c[k]=nv;return pre?nv:old},fl:o.fl}}
+function unary(){const t=toks[p];if(!t)err('unexpected end of file');
+if(t.k==='p'){switch(t.v){
+case '-':{p++;const o=unary();return{f:e=>-o.f(e),fl:o.fl}}
+case '+':p++;return unary();
+case '!':{p++;const o=unary();return{f:e=>o.f(e)?0:1,fl:false}}
+case '~':{p++;const o=unary();return{f:e=>~o.f(e),fl:false}}
+case '*':{p++;const o=unary();return{f:e=>{const q=ptr(o.f(e));chk(q);const v=q.a[q.i];if(v===undefined)throw new Error('Line '+t.line+': invalid memory access');return v},fl:o.fl,ref:e=>{const q=ptr(o.f(e));chk(q);return[q.a,q.i]}}}
+case '&':{p++;const o=unary();if(!o.ref)err('cannot take the address of this');return{f:e=>{const[c,k]=o.ref(e);return P(c,k)},fl:o.fl}}
+case '++':case '--':{p++;return incdec(unary(),t.v==='++'?1:-1,true)}
+case '(':if(isType(p+1)){p++;const ty=parseType();let pt=0;while(eat('*'))pt++;need(')');const o=unary();
+if(ty.f&&!pt)return{f:e=>+o.f(e),fl:true};
+if(!pt&&!ty.st)return{f:e=>{const v=o.f(e);return typeof v==='number'?Math.trunc(v):v},fl:false};
+return{f:o.f,fl:ty.f}}}}
+if(t.k==='i'&&t.v==='sizeof'){p++;if(isv('(')&&isType(p+1)){p++;const ty=parseType();let pt=0;while(eat('*'))pt++;need(')');const sz=pt?8:(ty.st&&structs[ty.st]?structs[ty.st].length*4:ty.sz);return{f:()=>sz,fl:false}}
+const o=unary();return{f:e=>sizeOf(o.f(e)),fl:false}}
+return postfix()}
+function postfix(){let n=primary();for(;;){const t=toks[p];if(!t||t.k!=='p')break;const b=n;
+if(t.v==='['){p++;const ix=expr().f;need(']');
+const ref=e=>{const x=b.f(e),k=ix(e);if(Array.isArray(x))return[x,k];if(x&&typeof x==='object')return[x.a,x.i+k];throw new Error('Line '+t.line+': cannot index this value')};
+n={f:e=>{const[c,k]=ref(e);const v=c[k];if(v===undefined)throw new Error('Line '+t.line+': array index '+k+' is out of range');return v},fl:b.fl,wr:b.wr,ref}}
+else if(t.v==='.'||t.v==='->'){p++;const nm=toks[p++].v;const arrow=t.v==='->';
+const ref=e=>{let o;if(arrow){const q=ptr(b.f(e));chk(q);o=q.a[q.i];if(typeof o!=='object'||o===null)o=q.a[q.i]={$s:1}}else o=b.f(e);return[o,nm]};
+n={f:e=>{const[o,k]=ref(e);const v=o[k];return v===undefined?0:v},fl:!!ff[nm],ref}}
+else if(t.v==='('&&b.ref){p++;const args=[];if(!eat(')')){do args.push(assign());while(eat(','));need(')')}const a2=args.map(x=>x.f);n={f:e=>callFn(b.f(e),a2.map(g=>g(e)),t.line),fl:false}}
+else if(t.v==='++'||t.v==='--'){p++;n=incdec(b,t.v==='++'?1:-1,false)}
+else break}
+return n}
+function primary(){const t=toks[p++];if(!t)err('unexpected end of file');
+if(t.k==='n'){const hex=/^0[xX]/.test(t.v);const fl=!hex&&/[.eE]/.test(t.v);const v=hex?parseInt(t.v,16):(fl?parseFloat(t.v):parseInt(t.v,/^0\d/.test(t.v)?8:10));return{f:()=>v,fl}}
+if(t.k==='c'){const v=unesc(t.v).charCodeAt(0);return{f:()=>v,fl:false}}
+if(t.k==='s'){let s=unesc(t.v);while(toks[p]&&toks[p].k==='s')s+=unesc(toks[p++].v);const a=S2(s);return{f:()=>a,fl:false}}
+if(t.k==='p'&&t.v==='('){const e=expr();need(')');return e}
+if(t.k==='i'){const name=t.v;
+if(isv('(')){p++;const args=[];if(!eat(')')){do args.push(assign());while(eat(','));need(')')}const a=args.map(x=>x.f);const bi=B[name],line=t.line;
+if(!bi&&(name in ts)&&!funcs[name])return{f:e=>{const fv=e[name]&&e[name].v;return callFn(fv,a.map(g=>g(e)),line)},fl:false};
+if(bi)return{f:e=>bi(a.map(g=>g(e))),fl:FL.has(name)};
+return{f:e=>callUser(name,a.map(g=>g(e)),line),fl:!!ft[name]}}
+if(!(name in ts)){if(funcs[name]||B[name]||fnames.has(name))return{f:()=>({$fn:name}),fl:false};err("'"+name+"' is not declared")}
+return{f:e=>{const c=e[name];if(!c)throw new Error('Line '+t.line+": '"+name+"' is not available here");return c.v},fl:ts[name],wr:tw[name],ref:e=>{const c=e[name];if(!c)throw new Error('Line '+t.line+": '"+name+"' is not available here");return[c,'v']}}}
+p--;err("unexpected '"+t.v+"'")}
+function initList(){need('{');const l=[];while(!isv('}')){l.push(isv('{')?initList():assign());if(!eat(','))break}need('}');return{lst:l}}
+function declarators(ty){const acts=[];do{let ptr=0;while(eat('*'))ptr++;let fp=false;if(isv('(')&&toks[p+1]&&toks[p+1].v==='*'){p+=2;fp=true;ptr=1}const nt=toks[p++];if(!nt||nt.k!=='i'){p--;err('expected a variable name')}const n=nt.v;const dims=[];if(fp){while(eat('[')){dims.push(isv(']')?null:assign().f);need(']')}need(')');skipP()}
+while(eat('[')){dims.push(isv(']')?null:assign().f);need(']')}
+ts[n]=ty.f;tw[n]=wrapFor(ty,ptr);const wrp=tw[n];let init=null;if(eat('='))init=isv('{')?initList():assign();
+const st=ty.st&&!ptr?ty.st:null,f=ty.f;
+acts.push(env=>{let v;
+if(dims.length){const ds=dims.map(d=>d&&d(env));const iv=init?evalInit(init,env):null;if(ds[0]==null)ds[0]=iv?iv.length:0;v=arr(ds,0,st);if(iv)fill(v,iv)}
+else{v=0;if(init){if(init.lst){if(st){v=mk(st);fill(v,evalInit(init,env))}else v=evalInit(init,env)[0]}else v=init.f(env)}else if(st)v=mk(st);
+if(typeof v==='number'){if(f&&!ptr)v=+v;else if(!ptr){v=Math.trunc(v);if(wrp)v=wrp(v)}}else if(v&&v.$s)v=clone(v)}
+env[n]={v}});
+}while(eat(','));return acts}
+function block(){need('{');pushS();const ss=[];while(!isv('}')){if(!toks[p])err("missing '}'");ss.push(stmt())}p++;popS();return env=>{const e2=Object.create(env);for(const s of ss)s(e2)}}
+function loopBody(body,env){try{body(env)}catch(e){if(e===BRK)return true;if(e!==CNT)throw e}return false}
+function stmt(){const ln=toks[p]?toks[p].line:0;const f=stmt0();return env=>{try{f(env)}catch(e){if(e instanceof Error&&ln&&!/^Line \d+:/.test(e.message))e.message='Line '+ln+': '+e.message;throw e}}}
+function stmt0(){const t=toks[p];if(!t)err('unexpected end of file');
+if(t.k==='p'){if(t.v==='{')return block();if(t.v===';'){p++;return()=>{}}}
+if(t.k==='i'){switch(t.v){
+case 'if':{p++;need('(');const c=expr().f;need(')');const a=stmt();let b=null;if(eat('else'))b=stmt();return env=>{if(c(env))a(env);else if(b)b(env)}}
+case 'while':{p++;need('(');const c=expr().f;need(')');const body=stmt();return env=>{while(c(env)){tick();if(loopBody(body,env))break}}}
+case 'do':{p++;const body=stmt();need('while');need('(');const c=expr().f;need(')');need(';');return env=>{do{tick();if(loopBody(body,env))break}while(c(env))}}
+case 'for':{p++;need('(');pushS();let init=()=>{};if(!isv(';')){if(isType()){const ty=parseType();const acts=declarators(ty);init=env=>{for(const a of acts)a(env)}}else{const e=expr();init=env=>{e.f(env)}}}need(';');
+const c=isv(';')?null:expr().f;need(';');const inc=isv(')')?null:expr().f;need(')');const body=stmt();popS();
+return env=>{const e2=Object.create(env);for(init(e2);!c||c(e2);inc&&inc(e2)){tick();if(loopBody(body,e2))break}}}
+case 'switch':{p++;need('(');const sv=expr().f;need(')');need('{');pushS();const cases=[],body=[];
+while(!eat('}')){if(!toks[p])err("missing '}'");if(isv('case')){p++;const ce=cond().f;need(':');cases.push({c:ce,i:body.length})}else if(isv('default')){p++;need(':');cases.push({c:null,i:body.length})}else body.push(stmt())}
+popS();return env=>{const e2=Object.create(env);const v=sv(env);let start=-1;for(const k of cases){if(k.c&&k.c(e2)===v){start=k.i;break}}
+if(start<0){const d=cases.find(k=>!k.c);if(!d)return;start=d.i}
+try{for(let i=start;i<body.length;i++)body[i](e2)}catch(e){if(e!==BRK)throw e}}}
+case 'return':{p++;let o=null;if(!isv(';'))o=expr();need(';');const r=curRet;
+return env=>{let v=o?o.f(env):0;if(typeof v==='number'){if(r.f&&!r.ptr)v=+v;else if(!r.ptr&&!r.vd)v=Math.trunc(v)}else if(v&&v.$s)v=clone(v);throw new Ret(v)}}
+case 'break':p++;need(';');return()=>{throw BRK};
+case 'continue':p++;need(';');return()=>{throw CNT};
+case 'typedef':typedef();return()=>{};}}
+if(isType()){const ty=parseType();if(eat(';'))return()=>{};const acts=declarators(ty);need(';');if(ty.stat){const keep={};let done=false;return env=>{if(!done){const t2=Object.create(env);for(const a of acts)a(t2);Object.assign(keep,t2);done=true}for(const k in keep)env[k]=keep[k]}}return env=>{for(const a of acts)a(env)}}
+const e=expr();need(';');return env=>{e.f(env)}}
+function typedef(){p++;const ty=parseType();let pt=0;while(eat('*'))pt++;const n=toks[p++].v;need(';');td[n]={f:ty.f&&!pt,st:ty.st&&!pt?ty.st:null,sz:ty.sz,un:ty.un}}
+function func(ty,ptr,name){need('(');const params=[];
+if(isv('void')&&toks[p+1]&&toks[p+1].v===')'){p+=2}
+else if(!eat(')')){do{if(isv('.')){p+=3;break}const pt=parseType();let pp=0;while(eat('*'))pp++;let n=null;if(isv('(')&&toks[p+1]&&toks[p+1].v==='*'){p+=2;n=toks[p++].v;need(')');skipP();pp=1}else if(toks[p]&&toks[p].k==='i')n=toks[p++].v;while(eat('[')){if(!isv(']'))assign();need(']');pp++}params.push({n,f:pt.f,ptr:pp,wr:wrapFor(pt,pp)})}while(eat(','));need(')')}
+ft[name]=ty.f&&!ptr;if(eat(';'))return;
+pushS();params.forEach(pm=>{if(pm.n){ts[pm.n]=pm.f;tw[pm.n]=pm.wr}});curRet={f:ty.f&&!ptr,ptr,vd:ty.vd&&!ptr};const body=block();popS();funcs[name]={params,body}}
+function callFn(fv,args,line){if(fv&&fv.$fn){const b=B[fv.$fn];return b?b(args):callUser(fv.$fn,args,line)}throw new Error('Line '+line+': calling something that is not a function')}
+function callUser(name,args,line){const fn=funcs[name];if(!fn)throw new Error('Line '+line+": function '"+name+"' is not defined");tick();
+const env=Object.create(G);fn.params.forEach((pm,i)=>{if(!pm.n)return;let v=args[i];if(v===undefined)v=0;if(v&&v.$s)v=clone(v);else if(typeof v==='number'){if(pm.f&&!pm.ptr)v=+v;else if(!pm.ptr){v=Math.trunc(v);if(pm.wr)v=pm.wr(v)}}env[pm.n]={v}});
+try{fn.body(env)}catch(e){if(e instanceof Ret)return e.v;if(e===BRK||e===CNT)return 0;throw e}return 0}
+// ---------- library
+const FL=new Set(['sqrt','pow','fabs','floor','ceil','sin','cos','tan','asin','acos','atan','atan2','log','log10','exp','fmod','round','atof','trunc','cbrt']);
+const B=D();
+for(const n of ['sqrt','floor','ceil','sin','cos','tan','asin','acos','atan','log','log10','exp','round','trunc','cbrt'])B[n]=a=>Math[n](a[0]);
+const setp=(q,v)=>{q=ptr(q);chk(q);q.a[q.i]=v};
+const more=()=>{if(ip>=inp.length){if(eofFinal)return true;throw new NeedInput()}return false};
+const doScan=(f,a,ai,s,pos,live)=>{let n=0,i=0,hit=false;
+const ws=()=>{while(pos<s.length&&/\s/.test(s[pos]))pos++};
+const mo=()=>{if(pos>=s.length){if(live&&!eofFinal)throw new NeedInput();hit=true;return false}return true};
+while(i<f.length){const ch=f[i];
+if(/\s/.test(ch)){ws();i++;continue}
+if(ch!=='%'){if(!mo()||s[pos]!==ch)break;pos++;i++;continue}
+const m=/^%(\*?)(\d*)(?:hh|h|ll|l|L|z|j|t)?(\[\^?\]?[^\]]*\]|[a-zA-Z%])/.exec(f.slice(i));if(!m)break;i+=m[0].length;
+const sup=m[1]==='*',w=m[2]?+m[2]:0,c=m[3];
+if(c==='%'){ws();if(!mo()||s[pos]!=='%')break;pos++;continue}
+if(c==='c'){if(!mo())break;const tk=s.substr(pos,w||1);pos+=tk.length;if(!sup){if(tk.length===1)setp(a[ai++],tk.charCodeAt(0));else{const q=ptr(a[ai++]);for(let k=0;k<tk.length;k++)q.a[q.i+k]=tk.charCodeAt(k)}n++}continue}
+if(c[0]!=='[')ws();if(!mo())break;
+const body=w?s.substr(pos,w):s.slice(pos);let re;
+if('diu'.includes(c))re=/^[+-]?\d+/;else if('xXp'.includes(c))re=/^[+-]?(?:0[xX])?[0-9a-fA-F]+/;else if(c==='o')re=/^[0-7]+/;
+else if('feEgGaA'.includes(c))re=/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/;else if(c==='s')re=/^\S+/;else if(c[0]==='[')re=new RegExp('^'+c+'+');else break;
+const tk=body.match(re);if(!tk)break;pos+=tk[0].length;
+if(!sup){const d=a[ai++];if(c==='s'||c[0]==='[')wr(d,tk[0]);else setp(d,'diu'.includes(c)?parseInt(tk[0],10):'xXp'.includes(c)?parseInt(tk[0],16):c==='o'?parseInt(tk[0],8):parseFloat(tk[0]));n++}}
+return{n,pos,hit}};
+Object.assign(B,{
+pow:a=>Math.pow(a[0],a[1]),fabs:a=>Math.abs(a[0]),abs:a=>Math.abs(a[0]),labs:a=>Math.abs(a[0]),atan2:a=>Math.atan2(a[0],a[1]),fmod:a=>a[0]%a[1],
+rand:()=>{rs=(Math.imul(rs,1103515245)+12345)>>>0;return (rs>>>16)&32767},srand:()=>0,time:()=>Math.floor(Date.now()/1000),clock:()=>Date.now()-t0,
+printf:a=>{const s=fmt(cstr(a[0]),a.slice(1));write(s);return s.length},
+fprintf:a=>{const s=fmt(cstr(a[1]),a.slice(2));write(s);return s.length},
+sprintf:a=>{const s=fmt(cstr(a[1]),a.slice(2));wr(a[0],s);return s.length},
+puts:a=>{write(cstr(a[0])+'\n');return 0},putchar:a=>{write(String.fromCharCode(a[0]));return a[0]},fflush:()=>0,
+getchar:()=>{if(more())return -1;const c=inp.charCodeAt(ip++);echo();return c},getc:()=>B.getchar(),fgetc:()=>B.getchar(),fputs:a=>{write(cstr(a[0]));return 0},
+gets:a=>{if(more())return 0;let j=inp.indexOf('\n',ip);const e=j<0?inp.length:j;wr(a[0],inp.slice(ip,e));ip=j<0?inp.length:j+1;echo();return a[0]},
+fgets:a=>{if(more())return 0;let j=inp.indexOf('\n',ip);j=j<0?inp.length:j+1;j=Math.min(j,ip+a[1]-1);wr(a[0],inp.slice(ip,j));ip=j;echo();return a[0]},
+strlen:a=>cstr(a[0]).length,strcpy:a=>{wr(a[0],cstr(a[1]));return a[0]},strncpy:a=>{wr(a[0],cstr(a[1]).slice(0,a[2]));return a[0]},
+strcat:a=>{wr(a[0],cstr(a[0])+cstr(a[1]));return a[0]},strcmp:a=>{const x=cstr(a[0]),y=cstr(a[1]);return x<y?-1:x>y?1:0},
+memset:a=>{const q=ptr(a[0]);for(let i=0;i<a[2]&&q.i+i<q.a.length;i++)q.a[q.i+i]=a[1];return a[0]},
+atoi:a=>parseInt(cstr(a[0]))||0,atof:a=>parseFloat(cstr(a[0]))||0,
+malloc:a=>Array(Math.max(1,Math.trunc(a[0])||1)).fill(0),calloc:a=>Array(Math.max(1,Math.trunc(a[0]*a[1])||1)).fill(0),free:()=>0,
+exit:a=>{throw new Exit(a[0]|0)},
+toupper:a=>a[0]>=97&&a[0]<=122?a[0]-32:a[0],tolower:a=>a[0]>=65&&a[0]<=90?a[0]+32:a[0],
+isdigit:a=>a[0]>=48&&a[0]<=57?1:0,isalpha:a=>(a[0]>=65&&a[0]<=90)||(a[0]>=97&&a[0]<=122)?1:0,
+isalnum:a=>(a[0]>=48&&a[0]<=57)||(a[0]>=65&&a[0]<=90)||(a[0]>=97&&a[0]<=122)?1:0,
+isspace:a=>a[0]===32||(a[0]>=9&&a[0]<=13)?1:0,isupper:a=>a[0]>=65&&a[0]<=90?1:0,islower:a=>a[0]>=97&&a[0]<=122?1:0,
+scanf:a=>{const f=cstr(a[0]);const re=/%\d*(?:hh|h|ll|l|L)?([a-zA-Z])/g;let m,n=0,ai=1;
+while((m=re.exec(f))){const c=m[1];if(c==='c'){if(ip>=inp.length)break;setp(a[ai++],inp.charCodeAt(ip++));n++;continue}
+const rest=inp.slice(ip),w=rest.match(/^\s*/)[0].length,body=rest.slice(w);let tk=null;
+if('diu'.includes(c))tk=body.match(/^[+-]?\d+/);else if('feEgG'.includes(c))tk=body.match(/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);else if(c==='s')tk=body.match(/^\S+/);
+if(!tk)break;ip+=w+tk[0].length;
+if(c==='s')wr(a[ai++],tk[0]);else setp(a[ai++],'diu'.includes(c)?parseInt(tk[0]):parseFloat(tk[0]));n++}
+return n}});
+B.scanf=a=>{const r=doScan(cstr(a[0]),a,1,inp,ip,true);ip=r.pos;echo();return r.n===0&&r.hit?-1:r.n};
+B.fscanf=a=>B.scanf(a.slice(1));
+B.realloc=a=>{const q=ptr(a[0]),n=Math.max(1,Math.trunc(a[1])||1),r=Array(n).fill(0);if(q&&q.a)for(let i=0;i<n&&q.i+i<q.a.length;i++)r[i]=q.a[q.i+i];return r};
+B.strchr=a=>{const q=ptr(a[0]);if(!q)return 0;const s=cstr(a[0]),i=s.indexOf(String.fromCharCode(a[1]));return a[1]===0?P(q.a,q.i+s.length):i<0?0:P(q.a,q.i+i)};
+B.strrchr=a=>{const q=ptr(a[0]);if(!q)return 0;const i=cstr(a[0]).lastIndexOf(String.fromCharCode(a[1]));return i<0?0:P(q.a,q.i+i)};
+B.strstr=a=>{const q=ptr(a[0]);if(!q)return 0;const i=cstr(a[0]).indexOf(cstr(a[1]));return i<0?0:P(q.a,q.i+i)};
+B.strncat=a=>{wr(a[0],cstr(a[0])+cstr(a[1]).slice(0,a[2]));return a[0]};
+B.memcpy=B.memmove=a=>{const d=ptr(a[0]),s=ptr(a[1]),n=Math.trunc(a[2]);for(let i=0;i<n&&s.i+i<s.a.length&&d.i+i<d.a.length;i++)d.a[d.i+i]=s.a[s.i+i];return a[0]};
+B.snprintf=a=>{const s=fmt(cstr(a[2]),a.slice(3));wr(a[0],s.slice(0,Math.max(0,a[1]-1)));return s.length};
+B.qsort=a=>{const q=ptr(a[0]),n=a[1],v=[];for(let i=0;i<n;i++)v.push(q.a[q.i+i]);v.sort((x,y)=>callFn(a[3],[P([x],0),P([y],0)],0));for(let i=0;i<n;i++)q.a[q.i+i]=v[i];return 0};
+B.atol=B.atoi;B.strdup=a=>S2(cstr(a[0]));B.putc=a=>B.putchar([a[0]]);
+B.sscanf=a=>{const r=doScan(cstr(a[1]),a,2,cstr(a[0]),0,false);return r.n===0&&r.hit?-1:r.n};
+B.strncmp=a=>{const x=cstr(a[0]).slice(0,a[2]),y=cstr(a[1]).slice(0,a[2]);return x<y?-1:x>y?1:0};
+// ---------- go
+const inits=[];for(let i=1;i<toks.length-1;i++)if(toks[i].k==='i'&&toks[i+1].v==='('&&(toks[i-1].k==='i'||toks[i-1].v==='*'))fnames.add(toks[i].v);
+while(p<toks.length){
+if(isv('typedef')){typedef();continue}
+const ty=parseType();if(eat(';'))continue;
+const save=p;let ptr=0;while(eat('*'))ptr++;
+const nt=toks[p];if(!nt||nt.k!=='i')err('expected a name');
+if(toks[p+1]&&toks[p+1].v==='('){p++;func(ty,ptr,nt.v)}
+else{p=save;const acts=declarators(ty);need(';');inits.push(...acts)}}
+try{for(const i of inits)i(G);return callUser('main',[1,[S2('./a.out'),0]],0)}
+catch(e){if(e instanceof NeedInput){ip=inp.length;echo()}if(e instanceof Exit)return e.c;if(e instanceof RangeError)throw new Error('Stack overflow: too much recursion');throw e}
+}
+
+function prepare(src){
+  const map = {'stdio.h':'cstdio','stdlib.h':'cstdlib','string.h':'cstring','math.h':'cmath','ctype.h':'cctype','time.h':'ctime','limits.h':'climits','float.h':'cfloat','assert.h':'cassert'};
+  return src.replace(/^[ \t]*#[ \t]*include[ \t]*<([^>]+)>[ \t]*$/gm, (m, h) => {
+    h = h.trim();
+    if (map[h]) return '#include <' + map[h] + '>';
+    return /\.h$/.test(h) ? '' : m;
+  });
+}
+function mood(kind){
+  const h = $('title'), f = $('face');
+  h.classList.remove('dance', 'fall'); f.classList.remove('pop'); f.textContent = '';
+  if (!kind) return;
+  void h.offsetWidth;
+  if (kind === 'happy') { h.classList.add('dance'); f.textContent = '😄'; try { cheer(); } catch (_) {} }
+  else { h.classList.add('fall'); f.textContent = '😢'; }
+  f.classList.add('pop');
+}
+function cheer(){
+  const msg = document.createElement('div');
+  msg.className = 'cheer'; msg.textContent = '🎉 Well done! 🎉';
+  document.body.appendChild(msg); setTimeout(() => msg.remove(), 2300);
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50';
+  const W = cv.width = innerWidth, H = cv.height = innerHeight, x = cv.getContext('2d');
+  document.body.appendChild(cv);
+  const cols = ['#ff5252','#ffd740','#69f0ae','#40c4ff','#e040fb','#ffffff'];
+  const ps = Array.from({length: 140}, () => ({x: Math.random()*W, y: -20 - Math.random()*H*0.5, w: 6 + Math.random()*6, h: 10 + Math.random()*8, vx: -1.5 + Math.random()*3, vy: 2 + Math.random()*4, r: Math.random()*6, vr: -.2 + Math.random()*.4, c: cols[Math.random()*cols.length|0]}));
+  let t = 0;
+  (function step(){
+    x.clearRect(0, 0, W, H);
+    for (const p of ps){ p.x += p.vx; p.y += p.vy; p.r += p.vr; x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.w/2, -p.h/2, p.w, p.h); x.restore(); }
+    if (++t < 160) requestAnimationFrame(step); else cv.remove();
+  })();
+}
+function jiggle(){
+  const h = $('title');
+  mood('happy');
+}
+function hintFor(m){
+  const t = [
+    [/is used but #include/, 'Add the missing #include line at the very top of your program.'],
+    [/undefined reference to main/, 'Every C program needs a main function, for example: int main() { ... return 0; }'],
+    [/never closed|with no matching/, 'Check your brackets. Every ( [ { needs its matching ) ] }. The line shown is where the problem was found.'],
+    [/unterminated/, 'Close the string or character with its closing quote, and close a comment with */.'],
+    [/is not declared/, 'Declare the variable before using it (for example int x;) and check the spelling and capital letters.'],
+    [/function .* is not defined/, 'Define the function above main, or check its spelling. If it is a library function, this interpreter may not support it yet.'],
+    [/missing '}'|expected '}'/, 'Count your { and } braces. Every opening brace needs a closing one.'],
+    [/expected ';'/, 'Add a missing semicolon at the end of this line or the line above.'],
+    [/expected '[)(]'/, 'Check the brackets on this line and the line above. Every ( needs a matching ).'],
+    [/expected/, 'Something is missing or misplaced. Check this line and the line above for a missing ; ) } or a typo.'],
+    [/unexpected character/, 'Remove the stray symbol, or check for a missing closing quote.'],
+    [/unexpected/, 'Check this line for a typo or an extra symbol.'],
+    [/division by zero/, 'The divisor is 0. Check its value before dividing, for example with an if.'],
+    [/out of range|invalid memory/, 'An index is outside the array. Make sure your loop stops before the array size.'],
+    [/null pointer/, 'A pointer or variable was used where an address is needed. In scanf put & before the variable (scanf("%d", &x)). Otherwise give the pointer the address of a variable, or use malloc, first.'],
+    [/Stack overflow/, 'A function keeps calling itself. Add a base case that stops the recursion.'],
+    [/more than 5 seconds/, 'A loop never ends. Check the loop condition and make sure the variable in it changes.'],
+    [/not available here/, 'The variable is used outside the block where it was declared. Declare it earlier.'],
+    [/invalid assignment/, 'You can only assign to a variable, array element or pointer target, not to a value.']
+  ];
+  for (const [re, h] of t) if (re.test(m)) return h;
+  return 'Re-read this line for typos. If your C code is valid, this built-in interpreter may not support that feature.';
+}
+function errExtra(msg){
+  const mm = /^Line (\d+):\s*(.*)$/s.exec(msg);
+  const n = mm ? +mm[1] : 0;
+  const txt = mm ? mm[2] : msg;
+  const src = code.value.split('\n');
+  const pad = String(n).length;
+  let h = '\n<span class="err">Error' + (n ? ' on line ' + n : '') + ': ' + esc(txt.charAt(0).toUpperCase() + txt.slice(1)) + '</span>\n';
+  if (n && src[n - 1] !== undefined) {
+    h += '\n';
+    for (let k = n; k <= n; k++) {
+      const row = String(k).padStart(pad) + ' | ' + esc(src[k - 1]);
+      if (k === n) {
+        const ln = src[k - 1], lead = ln.length - ln.trimStart().length;
+        h += '<span class="err">&gt; ' + row + '\n' + ' '.repeat(2 + pad + 3 + lead) + '^'.repeat(Math.max(1, ln.trim().length)) + '</span>\n';
+      } else h += '<span style="opacity:.55">  ' + row + '</span>\n';
+    }
+  }
+  return h + '\n<span style="opacity:.9">How to fix: ' + esc(hintFor(msg)) + '</span>';
+}
+function errExtraOld(msg){
+  const mm = /^Line (\d+):/.exec(msg);
+  const n = mm ? +mm[1] : 0;
+  const src = code.value.split('\n');
+  let h = '\n\n';
+  if (n && src[n - 1] !== undefined) h += '<span style="opacity:.65">Line ' + n + ':</span>  ' + esc(src[n - 1].trim() || '(empty line)') + '\n\n';
+  return h + '<span style="opacity:.85">How to fix: ' + esc(hintFor(msg)) + '</span>';
+}
+function lint(src){
+  const bad = (n, m) => 'Line ' + n + ': ' + m;
+  const L = src.length;
+  let line = 1, out = '', i = 0;
+  while (i < L) {
+    const c = src[i], d = src[i + 1];
+    if (c === '/' && d === '/') { while (i < L && src[i] !== '\n') i++; continue; }
+    if (c === '/' && d === '*') {
+      const s = line; i += 2;
+      while (i < L && !(src[i] === '*' && src[i + 1] === '/')) { if (src[i] === '\n') { line++; out += '\n'; } i++; }
+      if (i >= L) return bad(s, 'unterminated comment, the /* has no closing */');
+      i += 2; continue;
+    }
+    if (c === '"' || c === "'") {
+      const s = line, what = c === '"' ? 'string' : 'character';
+      i++;
+      while (i < L && src[i] !== c) { if (src[i] === '\\') i++; if (src[i] === '\n') break; i++; }
+      if (i >= L || src[i] === '\n') return bad(s, 'unterminated ' + what + ' literal, the closing ' + c + ' is missing');
+      i++; out += c + c; continue;
+    }
+    if (c === '\n') line++;
+    out += c; i++;
+  }
+  const st = [], pr = {')': '(', ']': '[', '}': '{'}, cl = {'(': ')', '[': ']', '{': '}'};
+  line = 1;
+  for (const ch of out) {
+    if (ch === '\n') line++;
+    else if (cl[ch]) st.push([ch, line]);
+    else if (pr[ch]) { const t = st.pop(); if (!t || t[0] !== pr[ch]) return bad(line, `unexpected ${ch} with no matching ${pr[ch]}`); }
+  }
+  if (st.length) { const t = st.pop(); return bad(t[1], `${t[0]} is never closed, no matching ${cl[t[0]]} found`); }
+  const hdr = new Set([...src.matchAll(/^[ \t]*#[ \t]*include[ \t]*<([^>]+)>/gm)].map(m => m[1].trim()));
+  const need = {'stdio.h': ['printf','scanf','puts','gets','fgets','getchar','putchar','sprintf','sscanf','fprintf','fscanf','fputs'], 'stdlib.h': ['malloc','calloc','free','exit','atoi','atof','rand','srand','abs'], 'string.h': ['strlen','strcpy','strncpy','strcat','strcmp','strncmp','memset'], 'math.h': ['sqrt','pow','floor','ceil','fabs','sin','cos','tan','log','log10','exp'], 'ctype.h': ['toupper','tolower','isdigit','isalpha','isalnum','isspace','isupper','islower']};
+  const rows = out.split('\n');
+  for (const h in need) {
+    if (hdr.has(h)) continue;
+    for (const f of need[h]) {
+      if (new RegExp('\\b(?:int|void|double|float|char|long)\\s+\\*?\\s*' + f + '\\s*\\(').test(out)) continue;
+      const re = new RegExp('\\b' + f + '\\s*\\(');
+      for (let k = 0; k < rows.length; k++) if (!/^\s*#/.test(rows[k]) && re.test(rows[k])) return bad(k + 1, `${f} is used but #include <${h}> is missing`);
+    }
+  }
+  if (!/\bmain\s*\(/.test(out)) return bad(1, 'undefined reference to main, every C program needs a main function');
+  return null;
+}
+let inputs = [], eof = false;
+function run(){ window.__seed = ((Math.random() * 4294967295) >>> 0) || 1; mood(''); $('newBtn').hidden = true; inputs = []; eof = false; window.__botNeed = false; exec(); }
+function exec(){
+  let text = '';
+  const t0 = performance.now();
+  out.textContent = '';
+  status.textContent = 'Running…';
+  setTimeout(() => {
+    try {
+      const le = lint(code.value); if (le) throw new Error(le);
+      const exit = runC(code.value, inputs.map(l => l + '\n').join(''), s => { text += s; }, eof);
+      out.textContent = text || '(no output)';
+      status.textContent = 'Exited with code ' + exit + ' in ' + Math.round(performance.now() - t0) + ' ms';
+      jiggle(); $('newBtn').hidden = false; saveCurrent();
+      botOnRun(true, {text, exit});
+      setTimeout(() => out.closest('.pane').scrollIntoView({behavior: 'smooth', block: 'start'}), 1800);
+    } catch (e) {
+      if (e instanceof NeedInput) { botNeed(); askInput(text); return; }
+      out.innerHTML = esc(text) + (text && !text.endsWith('\n') ? '\n' : '') +
+        '' +
+        errExtra(String(e && e.message ? e.message : e));
+      status.textContent = 'Error'; mood('sad');
+      botOnRun(false, {msg: String(e && e.message ? e.message : e)});
+    }
+  }, 20);
+}
+function askInput(text){
+  out.textContent = text;
+  const box = document.createElement('input');
+  box.type = 'text'; box.autocomplete = 'off'; box.spellcheck = false; box.setAttribute('aria-label', 'Program input');
+  out.appendChild(box);
+  box.addEventListener('input', () => { box.style.width = (box.value.length + 1) + 'ch'; });
+  status.textContent = 'Waiting for input… Enter to send, Ctrl+D to end input';
+  box.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); inputs.push(box.value); exec(); }
+    else if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); eof = true; exec(); }
+  });
+  out.scrollTop = out.scrollHeight;
+  box.focus();
+}
+out.addEventListener('click', () => { const b = out.querySelector('input'); if (b) b.focus(); });
+$('run').addEventListener('click', run);
+const HKEY = 'cplay.history.v1';
+const STARTER = '#include <stdio.h>\n\nint main() {\n  \n  return 0;\n}\n';
+let history = [], currentId = null;
+try { history = JSON.parse(localStorage.getItem(HKEY) || '[]'); if (!Array.isArray(history)) history = []; } catch (_) { history = []; }
+function persist(){ try { localStorage.setItem(HKEY, JSON.stringify(history)); } catch (_) {} try { cloudSave(); } catch (_) {} }
+function snippet(src){
+  return src.split('\n').length + ' lines';
+}
+const clip = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s;
+function autoTitle(src){
+  // 1) a short comment at the top of the program is the best title
+  const first = src.split('\n').map(l => l.trim()).filter(Boolean)[0] || '';
+  let cm = /^\/\/\s*(.+)$/.exec(first) || /^\/\*+\s*(.+?)\s*\**\/?$/.exec(first);
+  if (cm && cm[1].replace(/[*\/\s]/g, '').length > 2 && !/^[=\-_*#]+$/.test(cm[1])) return clip(cm[1].replace(/\*\/\s*$/, '').trim(), 32);
+  // 2) look at what the program does (comments and strings removed for keyword checks)
+  const bare = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, ' ');
+  const nostr = bare.replace(/"(?:\\.|[^"\\\n])*"/g, '""');
+  const txt = (bare.match(/"(?:\\.|[^"\\\n])*"/g) || []).join(' ').toLowerCase();
+  const has = re => re.test(nostr), say = re => re.test(txt);
+  const all = (nostr + ' ' + txt).toLowerCase();
+  const fnNames = [...nostr.matchAll(/\b(?:int|void|float|double|char|long|unsigned)\s+\*?\s*(\w+)\s*\([^)]*\)\s*\{/g)].map(m => m[1]).filter(n => n !== 'main');
+  const recursive = fnNames.some(n => new RegExp('\\b' + n + '\\s*\\(').test(nostr.slice(nostr.indexOf(n + '(') + n.length + 1).replace(/^[^{]*\{/, '')));
+  // digit-by-digit programs: recognise them by the % 10 and / 10 logic, whatever the variables are called
+  const mod10 = /%\s*10\b/.test(nostr), div10 = /\/\s*10\b|\/=\s*10\b/.test(nostr);
+  const digitLoop = mod10 && div10;
+  const charDigits = /-\s*'0'/.test(bare);
+  if (digitLoop || charDigits || (div10 && /\bwhile\b|\bfor\b/.test(nostr) && /count|digits|cnt/i.test(all))) {
+    const dvars = [...nostr.matchAll(/(\w+)\s*=\s*[^;=]*%\s*10\b/g)].map(m => m[1]);
+    const rhs = '(?:%\\s*10\\b|-\\s*\'0\'' + dvars.map(v => '|\\b' + v + '\\b').join('') + ')';
+    const accum = new RegExp('(\\w+)\\s*\\+=\\s*[^;]*' + rhs + '|(\\w+)\\s*=\\s*\\2\\s*\\+\\s*[^;]*' + rhs).test(nostr);
+    if (/armstrong/i.test(all)) return 'Armstrong number';
+    if (/palindrome/i.test(all)) return 'Palindrome check';
+    if (/\w+\s*=\s*\w+\s*\*\s*10\s*\+/.test(nostr)) return 'Reverse of a number';
+    if (accum) return 'Sum of individual digits';
+    if (/(\w+)\s*\+\+|\+\+\s*\w+|\w+\s*\+=\s*1\b/.test(nostr) && /count|digits|cnt/i.test(all)) return 'Count digits';
+    return 'Digits of a number';
+  }
+  const rules = [
+    [/fibonacci|\bfib\w*\b/, 'Fibonacci series'],
+    [/factorial|\bfact\w*\b/, 'Factorial'],
+    [/palindrome/, 'Palindrome check'],
+    [/armstrong/, 'Armstrong number'],
+    [/\bprime\w*\b/, 'Prime numbers'],
+    [/\b(gcd|hcf)\b/, 'GCD of numbers'],
+    [/\blcm\b/, 'LCM of numbers'],
+    [/leap\s*year|leap/, 'Leap year check'],
+    [/bubble/, 'Bubble sort'],
+    [/selection\s*sort|selectionsort/, 'Selection sort'],
+    [/insertion/, 'Insertion sort'],
+    [/binary\s*search|binarysearch|\bbsearch\b/, 'Binary search'],
+    [/linear\s*search|linearsearch/, 'Linear search'],
+    [/\bqsort\b/, 'Sorting with qsort'],
+    [/\bsort\w*\b/, 'Sorting program'],
+    [/\bswap\w*\b/, 'Swap two values'],
+    [/\brev(erse)?\w*\b/, 'Reverse'],
+    [/celsius|fahrenheit|temperature/, 'Temperature converter'],
+    [/simple\s*interest|\binterest\b/, 'Simple interest'],
+    [/\bcalculator\b|case\s*'[+\-*\/]'/, 'Calculator'],
+    [/\bgrade\b|\bmarks\b/, 'Grade calculator'],
+    [/\bpalin/, 'Palindrome check'],
+    [/\bfactors?\b/, 'Factors of a number'],
+    [/\bpower\b|\bpow\s*\(/, 'Power of a number'],
+    [/\bsqrt\s*\(/, 'Square root'],
+    [/\bradius\b|\barea\b|m_pi|3\.14/, 'Area calculation'],
+    [/\bmatrix\b/, 'Matrix program'],
+    [/\btable\b/, 'Multiplication table'],
+    [/\bvowel/, 'Count vowels'],
+    [/\bdigit\w*\b.*%\s*10|%\s*10.*\/\s*10/, 'Digits of a number'],
+    [/\bstruct\b[\s\S]*\bstudent\b|\bstudent\b[\s\S]*\bstruct\b/, 'Student record (struct)'],
+    [/\bstruct\b/, 'Structure example'],
+    [/\bunion\b/, 'Union example'],
+    [/\benum\b/, 'Enum example'],
+    [/\b(malloc|calloc|realloc)\s*\(/, 'Dynamic memory'],
+    [/->\s*next|\bnode\b|linked/, 'Linked list']
+  ];
+  for (const [re, t] of rules) if (re.test(all)) return t;
+  if (/\w+\s*\(\s*\w+\s*-\s*1\s*\)\s*\+\s*\w+\s*\(\s*\w+\s*-\s*2\s*\)/.test(nostr)) return 'Fibonacci series';
+  if (recursive && /\*\s*\w+\s*\(\s*\w+\s*-\s*1\s*\)/.test(nostr)) return 'Factorial';
+  if (/\[\s*\w+\s*\]\s*>\s*\w+\s*\[\s*\w+\s*\+\s*1\s*\]/.test(nostr)) return 'Bubble sort';
+  if (say(/hello,?\s*world/)) return 'Hello World';
+  if (/\w\s*\[[^\]]*\]\s*\[[^\]]*\]/.test(nostr)) return 'Two-dimensional array';
+  if (/\bfor\b[^;]*;[^;]*;[^)]*\)\s*\{?\s*(?:for\b[^;]*;[^;]*;[^)]*\)|[^}]*printf\s*\(\s*"[* #]+")/.test(nostr) && /["']\s*[*#]\s*["']|"[*#]+"/.test(bare)) return 'Star pattern';
+  // --- read the program's logic to find a proper name ---
+  {
+    const amp = (nostr.match(/&\s*\w+/g) || []).length, loop = /\b(for|while|do)\b/.test(nostr), scan = /\bscanf\s*\(/.test(nostr);
+    if (/(\w+)\s*=\s*(\w+)\s*;\s*\2\s*=\s*(\w+)\s*;\s*\3\s*=\s*\1\s*;/.test(nostr) || /\*\s*(\w+)\s*=\s*\*\s*(\w+)\s*;[\s\S]*\*\s*\2\s*=\s*\w+\s*;/.test(nostr)) return 'Swap two numbers';
+    if (/=\s*\w+\s*\+\s*\w+\s*;\s*\w+\s*=\s*\w+\s*;\s*\w+\s*=\s*\w+\s*;/.test(nostr) && loop) return 'Fibonacci series';
+    if (loop && (/(\w+)\s*\*=\s*\w+/.test(nostr) || /(\w+)\s*=\s*\1\s*\*\s*\w+\s*;/.test(nostr))) return scan ? 'Factorial' : 'Product / power calculation';
+    if (loop && /%d\s*[x*×]\s*%d\s*=\s*%d/i.test(txt)) return 'Multiplication table';
+    if (/\*\s*9\s*\/\s*5\s*\+\s*32|1\.8\s*\*[^;]*\+\s*32/.test(nostr)) return 'Celsius to Fahrenheit';
+    if (/-\s*32\s*\)?\s*\*\s*5\s*\/\s*9|5\s*\/\s*9\s*\*/.test(nostr)) return 'Fahrenheit to Celsius';
+    if (/\*\s*\w+\s*\*\s*\w+\s*\/\s*100/.test(nostr)) return 'Simple interest';
+    if (/aeiou/i.test(bare)) return 'Count vowels';
+    if (/\btoupper\s*\(/.test(nostr)) return 'Convert to uppercase';
+    if (/\btolower\s*\(/.test(nostr)) return 'Convert to lowercase';
+    if (/==\s*'\s'/.test(bare) && loop) return 'Count words';
+    if (/\bstrlen\s*\(/.test(nostr) && /--|>=\s*0/.test(nostr) && loop) return 'Reverse a string';
+    if (/\bstrlen\s*\(/.test(nostr) && !loop) return 'String length';
+    if (/for\s*\([^;]*;\s*\w+\s*>=\s*0\s*;[^)]*--/.test(nostr) && /\[\s*\w+\s*\]/.test(nostr)) return 'Reverse of an array';
+    const mx = /if\s*\(\s*\w+\s*\[\s*\w+\s*\]\s*([<>]=?)\s*\w+\s*\)/.exec(nostr);
+    if (mx && loop) return mx[1][0] === '>' ? 'Largest element in array' : 'Smallest element in array';
+    if (loop && /%\s*\w+\s*==\s*0/.test(nostr) && !/%\s*2\s*==/.test(nostr) && /\+=\s*\w+/.test(nostr) && /==\s*\w+\s*\)/.test(nostr)) return 'Perfect number';
+    if (loop && /%\s*\w+\s*==\s*0/.test(nostr) && !/%\s*2\s*==/.test(nostr) && /printf\s*\(/.test(nostr)) return 'Factors of a number';
+    if (loop && /\+=\s*\w+\s*\*\s*\w+/.test(nostr)) return 'Sum of squares';
+    if (loop && /\w+\s*\[\s*\w+\s*\]/.test(nostr) && /\+=\s*\w+\s*\[/.test(nostr)) return 'Sum of array elements';
+    if (loop && scan && /\+=\s*\w+\s*;|=\s*\w+\s*\+\s*\w+\s*;/.test(nostr) && !/\[/.test(nostr)) return 'Sum of first N numbers';
+    if (/\(\s*\w+\s*\+\s*\w+(\s*\+\s*\w+)*\s*\)\s*\/\s*\d/.test(nostr) || /\b(avg|average|mean)\b/i.test(all)) return 'Average of numbers';
+    if (/(\w+)\s*\*\s*\1\s*\*\s*\1\b/.test(nostr)) return 'Cube of a number';
+    if (/(\w+)\s*\*\s*\1\b/.test(nostr) && scan && !loop) return 'Square of a number';
+    if (/scanf\s*\(\s*"%c"/.test(bare) && /printf\s*\(\s*"%d"/.test(bare)) return 'ASCII value of a character';
+    if (!loop && /\bif\b/.test(nostr)) {
+      const cmp = />=?|<=?/.test(nostr.replace(/->/g, ''));
+      if (/positive|negative/.test(txt)) return 'Positive or negative';
+      if (/vote|voting|eligible/.test(txt)) return 'Voting eligibility';
+      if (/\bpass\b|\bfail\b/.test(txt)) return 'Pass or fail';
+      if (/divisible|multiple/.test(txt)) return 'Divisibility check';
+      if (cmp && amp === 3) return /</.test(nostr.replace(/<</g, '')) && !/>/.test(nostr) ? 'Smallest of three numbers' : 'Largest of three numbers';
+      if (cmp && amp === 2) return /</.test(nostr) && !/>/.test(nostr) ? 'Smallest of two numbers' : 'Largest of two numbers';
+    }
+    if (loop && /\+=\s*2|\+\s*2\s*\)/.test(nostr) && /printf\s*\(/.test(nostr)) return 'Odd / even number series';
+    if (loop && /printf\s*\(\s*"%d/.test(bare) && !scan && !/\[/.test(nostr)) return 'Print numbers in a range';
+    if (!loop && scan && amp === 2 && /\w+\s*\+\s*\w+/.test(nostr)) return 'Add two numbers';
+    if (!loop && scan && amp === 3 && /\w+\s*\+\s*\w+/.test(nostr)) return 'Sum of three numbers';
+    if (!loop && scan && amp === 2 && /\w+\s*-\s*\w+/.test(nostr)) return 'Subtract two numbers';
+    if (!loop && scan && amp === 2 && /\w+\s*\*\s*\w+/.test(nostr)) return 'Multiply two numbers';
+    if (!loop && scan && amp === 2 && /\w+\s*\/\s*\w+/.test(nostr)) return 'Divide two numbers';
+  }
+  if (/\b(strlen|strcpy|strcat|strcmp|strncpy|strstr|strrchr|strchr)\s*\(/.test(all)) return 'String functions';
+  if (recursive) return 'Recursion example';
+  if (/%\s*2\s*==\s*0/.test(nostr) || /%\s*2\s*!=\s*0/.test(nostr)) return 'Even or odd';
+  if (has(/\bscanf\s*\(/) && has(/\bsum\b|\+/) && !has(/\bfor\b|\bwhile\b/)) return 'Sum of numbers';
+  if (has(/\bswitch\b/)) return 'Switch case';
+  if (has(/\*\s*\w+\s*=|\bint\s*\*|\bchar\s*\*|\bfloat\s*\*|\bdouble\s*\*|&\w+/) && !has(/\bscanf\s*\(/)) return 'Pointers example';
+  if (has(/\[[^\]]*\]\s*(=|;)/) && has(/\bfor\b/)) return 'Array program';
+  if (has(/\bwhile\b|\bdo\b/)) return 'While loop';
+  if (has(/\bfor\b/)) return 'For loop';
+  if (has(/\bif\b/)) return 'If / else program';
+  if (has(/\bscanf\s*\(/)) return 'Input program';
+  // 3) last resort: first line the program prints
+  const m = /printf\s*\(\s*"((?:\\.|[^"\\])*)"/.exec(bare);
+  const t = m ? m[1].replace(/\\[ntr]/g, ' ').replace(/%[-+ 0#]*\d*(?:\.\d+)?[a-zA-Z]/g, '').replace(/\s+/g, ' ').trim() : '';
+  return t.length > 2 ? clip(t, 28) : '';
+}
+function titleOf(h){ return (h.name && h.name.trim()) || autoTitle(h.code) || ('Program ' + h.n); }
+let editingId = null, noteOpenId = null;
+function startRename(id){ editingId = id; renderHist(); const i = document.querySelector('#hist input.item'); if (i) { i.focus(); i.select(); } }
+function finishRename(id, value, save){
+  const h = history.find(x => x.id === id);
+  if (h && save) { const v = value.trim().slice(0, 40); if (v && v !== autoTitle(h.code)) h.name = v; else delete h.name; persist(); }
+  editingId = null; renderHist();
+}
+function saveCurrent(){
+  const c = code.value;
+  if (!c.trim() || c.trim() === STARTER.trim()) return;
+  let it = (currentId && history.find(h => h.id === currentId)) || history.find(h => h.code === c);
+  /* a clearly different program (pasted or rewritten) is a NEW entry, not an overwrite */
+  if (it && it.code !== c) {
+    const ls = s => new Set(s.split('\n').map(x => x.trim()).filter(x => x.length > 1));
+    const a = ls(it.code), b = ls(c); let same = 0; a.forEach(x => { if (b.has(x)) same++; });
+    const sim = same / Math.max(1, new Set([...a, ...b]).size);
+    const t1 = autoTitle(it.code), t2 = autoTitle(c);
+    if (sim < 0.4 || (t1 && t2 && t1 !== t2 && sim < 0.7)) it = history.find(h => h.code === c) || null;
+  }
+  if (it) { it.code = c; it.time = Date.now(); }
+  else it = {id: Date.now(), n: history.reduce((m, h) => Math.max(m, h.n || 0), 0) + 1, code: c, time: Date.now()};
+  currentId = it.id;
+  history = [it, ...history.filter(h => h !== it)].slice(0, 100);
+  persist(); renderHist();
+}
+function renderHist(){
+  const ul = $('hist'); ul.innerHTML = '';
+  if (!history.length) { ul.innerHTML = '<li class="empty">No programs yet. Run a program and it will be saved here.</li>'; return; }
+  for (const h of history) {
+    const li = document.createElement('li');
+    const title = titleOf(h);
+    let main;
+    if (h.id === editingId) {
+      main = document.createElement('input'); main.type = 'text'; main.className = 'item'; main.value = title; main.maxLength = 40;
+      main.setAttribute('aria-label', 'Program name'); main.placeholder = 'Program name';
+      let done = false;
+      main.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); done = true; finishRename(h.id, main.value, true); }
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done = true; finishRename(h.id, '', false); }
+      });
+      main.addEventListener('blur', () => { if (!done) { done = true; finishRename(h.id, main.value, true); } });
+    } else {
+      main = document.createElement('button'); main.className = 'item' + (h.id === currentId ? ' cur' : '');
+      const when = new Date(h.time).toLocaleString([], {day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'});
+      main.innerHTML = '<span class="t">' + esc(title) + '</span><span class="d">' + esc(when + ' · ' + snippet(h.code)) + '</span>';
+      main.addEventListener('click', () => loadProgram(h.id));
+      main.addEventListener('dblclick', e => { e.preventDefault(); startRename(h.id); });
+    }
+    const r = document.createElement('button'); r.className = 'ren'; r.setAttribute('aria-label', 'Rename ' + title); r.title = 'Rename';
+    r.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+    r.addEventListener('mousedown', e => e.preventDefault());
+    r.addEventListener('click', () => { if (h.id === editingId) { const i = document.querySelector('#hist input.item'); finishRename(h.id, i ? i.value : '', true); } else startRename(h.id); });
+    const d = document.createElement('button'); d.className = 'del'; d.textContent = '✕'; d.setAttribute('aria-label', 'Delete ' + title);
+    d.addEventListener('click', () => { history = history.filter(x => x.id !== h.id); if (currentId === h.id) currentId = null; persist(); renderHist(); });
+    const nb = document.createElement('button'); nb.className = 'note-btn' + (h.note && h.note.trim() ? ' has' : '');
+    nb.title = 'Note'; nb.setAttribute('aria-label', 'Note for ' + title); nb.setAttribute('aria-expanded', String(h.id === noteOpenId));
+    nb.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg>';
+    nb.addEventListener('mousedown', e => e.preventDefault());
+    nb.addEventListener('click', () => { noteOpenId = h.id === noteOpenId ? null : h.id; renderHist(); if (noteOpenId) { const ta = document.querySelector('#hist .notepane textarea'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } } });
+    li.append(main, nb, r, d);
+    if (h.id === noteOpenId) {
+      const pane = document.createElement('div'); pane.className = 'notepane';
+      const hd = document.createElement('div'); hd.className = 'nh';
+      hd.innerHTML = '<span class="nt">' + esc(title) + '</span><span class="ns">Saved ✓</span>';
+      const x = document.createElement('button'); x.textContent = '✕'; x.setAttribute('aria-label', 'Close note'); x.style.cssText = 'padding:2px 8px;border-radius:8px;font-size:12px';
+      x.addEventListener('click', () => { noteOpenId = null; renderHist(); });
+      hd.appendChild(x);
+      const ta = document.createElement('textarea'); ta.placeholder = 'Write a short note about this program…'; ta.maxLength = 1000; ta.value = h.note || '';
+      ta.setAttribute('aria-label', 'Note for ' + title);
+      const sv = hd.querySelector('.ns'); let tm = 0;
+      ta.addEventListener('input', () => {
+        h.note = ta.value; if (!h.note.trim()) delete h.note; persist();
+        nb.classList.toggle('has', !!(h.note && h.note.trim())); cnt.textContent = ta.value.length + ' / 1000';
+        sv.classList.add('on'); clearTimeout(tm); tm = setTimeout(() => sv.classList.remove('on'), 1200);
+      });
+      ta.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); noteOpenId = null; renderHist(); } });
+      const ft = document.createElement('div'); ft.className = 'nf';
+      const cnt = document.createElement('span'); cnt.textContent = ta.value.length + ' / 1000';
+      const cl = document.createElement('button'); cl.textContent = 'Clear note';
+      cl.addEventListener('click', () => { delete h.note; persist(); renderHist(); const t2 = document.querySelector('#hist .notepane textarea'); if (t2) t2.focus(); });
+      ft.append(cnt, cl);
+      pane.append(hd, ta, ft); li.appendChild(pane);
+    }
+    ul.appendChild(li);
+  }
+  const hint = document.createElement('li'); hint.className = 'hint'; hint.textContent = 'Titles are picked from your code. Tap ✎ to rename, or the note icon to jot a note.'; ul.appendChild(hint);
+}
+function loadProgram(id){
+  const h = history.find(x => x.id === id); if (!h) return;
+  saveCurrent();
+  currentId = h.id; code.value = h.code; lines();
+  inputs = []; eof = false; mood('');
+  out.textContent = 'Press Run to see output here.'; status.textContent = 'Ready';
+  $('newBtn').hidden = true; closeDrawer(); renderHist();
+  botReset('load', h);
+  scrollTo({top: 0, behavior: 'smooth'}); code.focus();
+}
+function openDrawer(){
+  renderHist();
+  const sc = $('scrim'); sc.hidden = false; requestAnimationFrame(() => sc.classList.add('show'));
+  $('drawer').classList.add('open'); $('drawer').setAttribute('aria-hidden', 'false'); $('menuBtn').setAttribute('aria-expanded', 'true');
+}
+function closeDrawer(){
+  const sc = $('scrim'); sc.classList.remove('show');
+  $('drawer').classList.remove('open'); $('drawer').setAttribute('aria-hidden', 'true'); $('menuBtn').setAttribute('aria-expanded', 'false');
+  setTimeout(() => { if (!sc.classList.contains('show')) sc.hidden = true; }, 220);
+}
+$('menuBtn').addEventListener('click', openDrawer);
+$('scrim').addEventListener('click', closeDrawer);
+$('closeDrawer').addEventListener('click', closeDrawer);
+$('clearAll').addEventListener('click', () => { history = []; currentId = null; persist(); renderHist(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+$('newBtn').addEventListener('click', () => {
+  saveCurrent(); currentId = null;
+  code.value = '#include <stdio.h>\n\nint main() {\n  \n  return 0;\n}\n';
+  inputs = []; eof = false; mood('');
+  out.textContent = 'Press Run to see output here.'; status.textContent = 'Ready';
+  $('newBtn').hidden = true; lines();
+  scrollTo({top: 0, behavior: 'smooth'});
+  botReset('new');
+  code.focus(); const pos = code.value.indexOf('\n  \n') + 3; code.setSelectionRange(pos, pos);
+});
+const lightBtn = $('lightBtn'), darkBtn = $('darkBtn');
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  lightBtn.setAttribute('aria-pressed', String(t === 'light'));
+  darkBtn.setAttribute('aria-pressed', String(t === 'dark'));
+  if (window.__bgColor) window.__bgColor();
+}
+lightBtn.addEventListener('click', () => setTheme('light'));
+darkBtn.addEventListener('click', () => setTheme('dark'));
+setTheme(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); } });
+(function(){
+  const cv = document.getElementById('bg'), ctx = cv.getContext('2d');
+  const toks = ['{ }','#include','int','0x1F','->','&&','printf','return 0;','*ptr','void','for','%d','++','[ ]','NULL','1010','sizeof','main()'];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W, H, dpr, parts = [], color = '#5fd0a0';
+  function readColor(){ color = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || color; }
+  function mk(any){ const z = Math.random(); return { t: toks[Math.random()*toks.length|0], x: Math.random()*W, y: any ? Math.random()*H : H + 20, s: 11 + z*14, v: .12 + z*.4, a: .08 + z*.2, ph: Math.random()*6.28 }; }
+  function resize(){
+    dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+    cv.width = W*dpr; cv.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+    parts = Array.from({length: Math.round(W*H/20000)}, () => mk(true));
+    if (reduce) frame(0);
+  }
+  function frame(t){
+    ctx.clearRect(0,0,W,H); ctx.fillStyle = color; ctx.textBaseline = 'middle';
+    for (const p of parts){
+      if (!reduce) p.y -= p.v;
+      if (p.y < -20){ Object.assign(p, mk(false)); }
+      const fade = Math.max(0, Math.min(1, p.y/90, (H - p.y)/90));
+      ctx.globalAlpha = p.a * fade;
+      ctx.font = p.s + 'px "IBM Plex Mono", ui-monospace, monospace';
+      ctx.fillText(p.t, p.x + Math.sin(t/3200 + p.ph)*8, p.y);
+    }
+    ctx.globalAlpha = 1;
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColor(); if (reduce) frame(0); });
+  addEventListener('resize', resize);
+  window.__bgColor = () => { readColor(); if (reduce) frame(0); };
+  readColor(); resize(); if (!reduce) requestAnimationFrame(frame);
+})();
+/* ================= Code buddy (chat bot) ================= */
+const chatForm = $('chatForm'), chatLog = $('chatLog'), chatText = $('chatText'), chipsEl = $('chips'), botFaceEl = $('botFace');
+const bot = {goal: '', plan: null, hintIdx: 0, seen: new Set(), active: new Set(), hadIssues: false, nudged: false, queue: [], busy: false, timer: 0, gen: 0};
+const botFmt = s => String(s).split(/~~~(?:c)?\n?([\s\S]*?)~~~/).map((p, k) => k % 2 ? '<div class="cb"><button type="button" class="cp">Copy</button><pre>' + esc(p.replace(/\n$/, '')) + '</pre></div>' : esc(p).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>')).join('');
+const botCap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+const botPick = a => a[Math.floor(Math.random() * a.length)];
+const BOT_SPEC = /%([-+ 0#]*)(\d+|\*)?(?:\.(\d+|\*))?(hh|h|ll|l|z|j|t|L)?([diuoxXeEfgGcsp%])/g;
+const BOT_STR = /^"(?:\\.|[^"\\])*"$/;
+
+function botFace(e){ botFaceEl.textContent = e; botFaceEl.classList.remove('pop'); void botFaceEl.offsetWidth; botFaceEl.classList.add('pop'); }
+function botScroll(){ chatLog.scrollTop = chatLog.scrollHeight; }
+function botAdd(kind, text, opts){
+  const d = document.createElement('div');
+  d.className = 'msg ' + (kind === 'me' ? 'me' : 'bot ' + kind);
+  d.innerHTML = botFmt(text);
+  if (opts && opts.fix) {
+    const b = document.createElement('button'); b.className = 'fix'; b.type = 'button';
+    b.textContent = opts.fix.label || 'Fix it for me ✨';
+    b.addEventListener('click', () => botApplyFix(opts.fix, b));
+    d.appendChild(document.createElement('br')); d.appendChild(b);
+  }
+  const ts = document.createElement('span'); ts.className = 'ts'; ts.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}); d.appendChild(ts);
+  const row = document.createElement('div'); row.className = 'row ' + (kind === 'me' ? 'me' : 'bot');
+  if (kind !== 'me') { const av = document.createElement('span'); av.className = 'av'; av.textContent = '🤖'; row.appendChild(av); }
+  row.appendChild(d); chatLog.appendChild(row);
+  while (chatLog.children.length > 80) chatLog.removeChild(chatLog.firstChild);
+  botScroll(); return d;
+}
+function botSay(text, kind, opts){ bot.queue.push({text, kind: kind || 'bot', opts, gen: bot.gen}); botPump(); }
+function botPump(){
+  if (bot.busy || !bot.queue.length) return;
+  bot.busy = true;
+  const m = bot.queue.shift();
+  const t = document.createElement('div'); t.className = 'msg bot typing'; t.innerHTML = '<i></i><i></i><i></i>';
+  const tr = document.createElement('div'); tr.className = 'row bot'; tr.innerHTML = '<span class="av">🤖</span>'; tr.appendChild(t); chatLog.appendChild(tr); botScroll();
+  setTimeout(() => {
+    tr.remove();
+    if (m.gen === bot.gen) {
+      botAdd(m.kind, m.text, m.opts);
+      if (m.kind === 'oops') botFace('😢'); else if (m.kind === 'yay') botFace('😄');
+    }
+    bot.busy = false; botPump();
+  }, Math.min(800, 300 + m.text.length * 5));
+}
+function botChips(list){
+  chipsEl.innerHTML = '';
+  for (const l of list) { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.addEventListener('click', () => botUser(l)); chipsEl.appendChild(b); }
+}
+const botMainChips = () => botChips(['💡 Give me a hint', '🔍 Check my code', '📖 Explain my code', '📚 All topics', '🆕 New program']);
+function botUser(text){ text = (text || '').trim(); if (!text) return; botAdd('me', text); botHear(text); }
+
+/* ---------- scanning the code ---------- */
+function botScan(src){
+  const raw = src.split('\n'), out = []; let inC = false;
+  for (let i = 0; i < raw.length; i++) {
+    const r = raw[i]; let t = '', bare = '', cut = r.length, j = 0, str = null;
+    while (j < r.length) {
+      const c = r[j], d = r[j + 1];
+      if (inC) { if (c === '*' && d === '/') { inC = false; t += '  '; bare += '  '; j += 2; } else { t += ' '; bare += ' '; j++; } continue; }
+      if (str) {
+        t += c;
+        if (c === '\\' && j + 1 < r.length) { t += r[j + 1]; bare += '  '; j += 2; continue; }
+        if (c === str) { str = null; bare += c; } else bare += ' ';
+        j++; continue;
+      }
+      if (c === '/' && d === '/') { cut = j; break; }
+      if (c === '/' && d === '*') { inC = true; t += '  '; bare += '  '; j += 2; continue; }
+      if (c === '"' || c === "'") { str = c; t += c; bare += c; j++; continue; }
+      t += c; bare += c; j++;
+    }
+    out.push({ln: i + 1, raw: r, t, bare, cut, tt: bare.trim()});
+  }
+  return out;
+}
+function botSplit(s){
+  const parts = []; let d = 0, cur = '';
+  for (const c of s) {
+    if ('([{'.includes(c)) d++; else if (')]}'.includes(c)) d--;
+    if (c === ',' && d === 0) { parts.push(cur); cur = ''; } else cur += c;
+  }
+  parts.push(cur); return parts;
+}
+const BOT_DECL = /^(?:(?:const|static|unsigned|signed|register|volatile)\s+)*(int|float|double|char|long|short|size_t|bool)\b(?:\s+(?:int|long))?\s+(?!\w+\s*\()(.+)$/;
+function botVars(L){
+  const V = {};
+  for (const l of L) {
+    const m = BOT_DECL.exec(l.tt); if (!m) continue;
+    for (const d of botSplit(m[2].replace(/;\s*$/, ''))) {
+      const mm = /^\s*(\*+)?\s*(\w+)\s*((?:\[[^\]]*\])*)/.exec(d); if (!mm) continue;
+      const dim = /\[\s*(\d+)\s*\]/.exec(mm[3]);
+      const kind = mm[1] ? 'ptr' : mm[3] ? 'array' : 'scalar';
+      (V[mm[2]] = V[mm[2]] || []).push({kind, type: m[1], fl: m[1] === 'float' || m[1] === 'double', dbl: m[1] === 'double', size: dim ? +dim[1] : null});
+    }
+  }
+  return V;
+}
+function botCall(l, name){
+  const m = new RegExp('\\b' + name + '\\s*\\(').exec(l.bare); if (!m) return null;
+  let i = m.index + m[0].length, d = 1, s = i; const args = [];
+  for (; i < l.bare.length; i++) {
+    const c = l.bare[i];
+    if ('([{'.includes(c)) d++;
+    else if (')]}'.includes(c)) { d--; if (d === 0) break; }
+    else if (c === ',' && d === 1) { args.push(l.t.slice(s, i).trim()); s = i + 1; }
+  }
+  if (d !== 0) return null;
+  const last = l.t.slice(s, i).trim(); if (last || args.length) args.push(last);
+  return {args};
+}
+const botFixSpec = (fn, k, conv, len) => raw => {
+  const p = raw.search(new RegExp('\\b' + fn + '\\s*\\(')); if (p < 0) return raw;
+  const q = raw.indexOf('"', p); if (q < 0) return raw;
+  const re = /"(?:\\.|[^"\\])*"/y; re.lastIndex = q; const r = re.exec(raw); if (!r) return raw;
+  let idx = -1;
+  const nl = r[0].replace(BOT_SPEC, (s, fl, w, pr, ln, c) => {
+    if (c === '%') return s;
+    if (!(w === '*' && fn === 'scanf')) idx++;
+    if (idx !== k) return s;
+    return '%' + fl + (w || '') + (pr !== undefined ? '.' + pr : '') + len + conv;
+  });
+  return raw.slice(0, q) + nl + raw.slice(q + r[0].length);
+};
+
+/* ---------- finding mistakes, line by line ---------- */
+function botAnalyze(src){
+  const L = botScan(src), V = botVars(L), issues = [];
+  const nb = i => { for (let k = i + 1; k < L.length; k++) if (L[k].tt) return L[k]; return null; };
+  const pb = i => { for (let k = i - 1; k >= 0; k--) if (L[k].tt) return L[k]; return null; };
+  const kindOf = n => { const a = V[n]; if (!a) return null; return new Set(a.map(x => x.kind + x.fl)).size === 1 ? a[0] : null; };
+  const mk = (l, kind, msg, fix) => issues.push({key: kind + ':' + l.ln + ':' + l.tt, line: l.ln, msg, fix: fix ? {label: fix.label, kind, line: l.ln - 1, before: l.raw, apply: fix.apply} : null});
+  let inInit = false, inEnum = false, pd = 0;
+  for (let i = 0; i < L.length; i++) {
+    const l = L[i], tt = l.tt, disp = l.t.trim(), startPd = pd;
+    for (const c of l.bare) { if (c === '(') pd++; else if (c === ')') pd = Math.max(0, pd - 1); }
+    if (!tt || tt[0] === '#') continue;
+    const prev = pb(i), next = nb(i), wasInit = inInit, wasEnum = inEnum;
+    if (/=\s*\{[^;}]*$/.test(tt)) inInit = true;
+    else if (inInit && /\}\s*;?\s*$/.test(tt)) inInit = false;
+    if (/\benum\b[^;]*\{\s*$/.test(tt)) inEnum = true;
+    else if (inEnum && /^\}/.test(tt)) inEnum = false;
+    if (wasInit || wasEnum) continue;
+
+    // 1) missing semicolon
+    let cand = startPd === 0 && pd === 0;
+    if (cand) {
+      if (/(\+\+|--)$/.test(tt)) cand = true;
+      else if (/[;{}:,(\[=+\-*\/&|<>!?%^~.\\]$/.test(tt)) cand = false;
+    }
+    if (cand) {
+      if (/^(?:\}\s*)?(?:else\s+if|if|for|switch)\s*\(.*\)$/.test(tt) || /^while\s*\(.*\)$/.test(tt) || /^(?:\}\s*)?else$/.test(tt) || tt === 'do') cand = false;
+      else if (/^(?:(?:typedef|static|const)\s+)*(?:struct|union|enum)\b[^;{=()]*$/.test(tt) && next && next.tt[0] === '{') cand = false;
+      else if (/^[A-Za-z_][\w\s\*]*?\s\**\s*\w+\s*\([^;]*\)$/.test(tt) && next && next.tt[0] === '{') cand = false;
+      else if (prev && /[,=+\-*\/&|(\\]$/.test(prev.tt)) cand = false;
+    }
+    if (cand) {
+      mk(l, 'semi', `You forgot the \`;\` at the end of \`${disp}\`. Every statement in C ends with a semicolon.`,
+        {label: 'Add the ; for me ✨', apply: raw => { const base = raw.slice(0, l.cut).replace(/\s+$/, ''); const rest = raw.slice(l.cut); return base + ';' + (rest ? '  ' + rest : ''); }});
+    }
+
+    // 2) = instead of == inside if / while
+    const cm = /^(?:\}\s*)?(?:else\s+)?(if|while)\s*\(/.exec(tt);
+    if (cm) {
+      const open = cm[0].length - 1; let d = 0, pos = -1;
+      for (let k = open; k < tt.length; k++) {
+        const c = tt[k];
+        if (c === '(') d++;
+        else if (c === ')') { d--; if (d === 0) break; }
+        else if (c === '=' && d === 1) {
+          if (tt[k + 1] === '=') { k++; continue; }
+          if ('!<>=+-*/%&|^'.includes(tt[k - 1])) continue;
+          pos = k; break;
+        }
+      }
+      if (pos >= 0) {
+        const rawPos = l.bare.indexOf(tt) + pos;
+        mk(l, 'eq', `A single \`=\` **stores** a value. To **compare** in \`${cm[1]}(...)\` use \`==\`. Did you mean \`${disp.slice(0, pos)}==${disp.slice(pos + 1)}\`?`,
+          {label: 'Change to == ✨', apply: raw => raw.slice(0, rawPos) + '==' + raw.slice(rawPos + 1)});
+      }
+    }
+
+    // 3) stray ; right after if / for / while
+    const sm = /^(?:else\s+)?(if|for|while)\s*\(.*\)\s*;$/.exec(tt);
+    if (sm && !(sm[1] === 'while' && prev && /\}\s*$/.test(prev.tt))) {
+      const idx = l.t.lastIndexOf(';');
+      mk(l, 'stray', `That \`;\` right after \`${sm[1]}(...)\` ends the statement, so the ${sm[1] === 'if' ? 'if does' : 'loop does'} nothing. Remove it.`,
+        {label: 'Remove the ; ✨', apply: raw => raw.slice(0, idx) + raw.slice(idx + 1)});
+    }
+
+    // 4) printf checks
+    const pc = botCall(l, 'printf');
+    if (pc && pc.args.length && BOT_STR.test(pc.args[0])) {
+      const f = pc.args[0].slice(1, -1);
+      const specs = [...f.matchAll(BOT_SPEC)].filter(m => m[5] !== '%');
+      let stars = 0; for (const m of specs) { if (m[2] === '*') stars++; if (m[3] === '*') stars++; }
+      const exp = specs.length + stars, got = pc.args.length - 1;
+      if (exp !== got) {
+        mk(l, 'pfcount', `\`printf\` has ${exp} placeholder${exp === 1 ? '' : 's'} (like \`%d\`) but you gave it ${got} value${got === 1 ? '' : 's'}. ${got > exp ? 'Remove the extra value or add a placeholder.' : 'Add the missing value or remove a placeholder.'}`);
+      } else if (!stars) {
+        specs.forEach((m, k) => {
+          const a = pc.args[k + 1] || '', v = /^\w+$/.test(a) ? kindOf(a) : null;
+          if (!v || v.kind !== 'scalar') return;
+          const c = m[5];
+          if ('diuoxX'.includes(c) && v.fl) mk(l, 'pft' + k, `\`%${c}\` is for whole numbers, but \`${a}\` is a ${v.type}. Use \`%f\` so the decimals show.`, {label: 'Change to %f ✨', apply: botFixSpec('printf', k, 'f', '')});
+          else if ('feEgG'.includes(c) && !v.fl) mk(l, 'pft' + k, `\`%${c}\` is for decimal numbers, but \`${a}\` is a ${v.type}. Use \`%d\` instead.`, {label: 'Change to %d ✨', apply: botFixSpec('printf', k, 'd', '')});
+          else if (c === 's') mk(l, 'pft' + k, `\`%s\` prints text, but \`${a}\` holds a single value. Use \`%c\` for one character or \`%d\` for a number.`);
+        });
+      }
+    }
+
+    // 5) scanf checks
+    const sc = botCall(l, 'scanf');
+    if (sc && sc.args.length && BOT_STR.test(sc.args[0]) && !/%\[/.test(sc.args[0])) {
+      const specs = [...sc.args[0].slice(1, -1).matchAll(BOT_SPEC)].filter(m => m[5] !== '%' && m[2] !== '*');
+      const vars = sc.args.slice(1);
+      if (vars.length < specs.length) {
+        mk(l, 'sccount', `\`scanf\` has ${specs.length} placeholder${specs.length === 1 ? '' : 's'} but only ${vars.length} variable${vars.length === 1 ? '' : 's'}. Each \`%d\` needs a variable to store into.`);
+      } else {
+        const need = [];
+        specs.forEach((m, k) => {
+          const a = vars[k] || '', c = m[5];
+          if (/^\w+$/.test(a)) {
+            const v = kindOf(a);
+            if (v && v.kind === 'scalar') { if (c === 's') mk(l, 'scs' + k, `\`%s\` reads text, but \`${a}\` can only hold one value. Declare it as an array, like \`char ${a}[50];\`.`); else need.push(a); }
+          }
+          const am = /^&\s*(\w+)$/.exec(a);
+          if (am) {
+            const v = kindOf(am[1]);
+            if (v && v.kind === 'scalar') {
+              if ('diu'.includes(c) && v.fl) mk(l, 'sct' + k, `\`%${c}\` reads a whole number, but \`${am[1]}\` is a ${v.type}. Use \`${v.dbl ? '%lf' : '%f'}\` to read decimals.`, {label: 'Fix the placeholder ✨', apply: botFixSpec('scanf', k, 'f', v.dbl ? 'l' : '')});
+              else if ('feEgG'.includes(c) && !v.fl) mk(l, 'sct' + k, `\`%${c}\` reads a decimal, but \`${am[1]}\` is a ${v.type}. Use \`%d\`.`, {label: 'Change to %d ✨', apply: botFixSpec('scanf', k, 'd', '')});
+              else if ('feEgG'.includes(c) && v.dbl && m[4] !== 'l') mk(l, 'sct' + k, `\`${am[1]}\` is a double, so \`scanf\` needs \`%lf\` (not \`%f\`). With \`%f\` the value gets stored wrongly.`, {label: 'Change to %lf ✨', apply: botFixSpec('scanf', k, 'f', 'l')});
+              else if ('feEgG'.includes(c) && v.type === 'float' && m[4] === 'l') mk(l, 'sct' + k, `\`${am[1]}\` is a float, so use \`%f\` (the \`l\` is only for double).`, {label: 'Change to %f ✨', apply: botFixSpec('scanf', k, 'f', '')});
+            }
+          }
+        });
+        if (need.length) {
+          mk(l, 'scamp', `\`scanf\` needs an \`&\` before ${need.map(n => '`' + n + '`').join(', ')}. It stores the value at the variable's address, e.g. \`scanf("%d", &${need[0]});\``,
+            {label: 'Add the & for me ✨', apply: raw => { let s = raw; for (const n of need) s = s.replace(new RegExp('(\\bscanf\\s*\\([^;]*?,\\s*)' + n + '(?=\\s*[,)])'), '$1&' + n); return s; }});
+        }
+      }
+    }
+
+    // 6) divide by zero, text compared with ==, array index too big
+    if (/[\/%]\s*0(?![\d.xX\w])/.test(tt)) mk(l, 'div0', 'You are dividing by `0`. That crashes or gives nonsense. Divide by a value that can\'t be zero, or check it with an `if` first.');
+    if (/(==|!=)\s*"/.test(tt) || /"\s*(==|!=)/.test(tt)) mk(l, 'streq', 'You can\'t compare text with `==` in C. Use `strcmp(a, b) == 0` (and add `#include <string.h>`).');
+    if (!BOT_DECL.test(tt)) {
+      for (const m of tt.matchAll(/\b(\w+)\s*\[\s*(\d+)\s*\]/g)) {
+        const a = V[m[1]];
+        if (a && a.every(x => x.kind === 'array' && x.size === a[0].size && x.size !== null) && +m[2] >= a[0].size) {
+          mk(l, 'oob' + m[1], `\`${m[1]}[${m[2]}]\` is outside the array. \`${m[1]}\` has ${a[0].size} item${a[0].size === 1 ? '' : 's'}, so the valid indexes are \`0\` to \`${a[0].size - 1}\`.`);
+          break;
+        }
+      }
+    }
+  }
+  return {issues, L, V};
+}
+
+/* ---------- friendly comments for good lines ---------- */
+const BOT_WHAT = {int: 'holds whole numbers', float: 'holds decimal numbers', double: 'holds decimals with extra precision', char: 'holds a single character', long: 'holds big whole numbers', short: 'holds small whole numbers', size_t: 'holds sizes and counts', bool: 'holds true or false'};
+function botComment(l){
+  const tt = l.tt; if (!tt || tt === '{' || tt === '}' || tt === '};') return null;
+  const done = tt[0] === '#' || /[;{})]$/.test(tt); if (!done) return null;
+  let m;
+  if ((m = /^#\s*include\s*<(\w+)\.h>/.exec(tt))) {
+    const h = {stdio: '`stdio.h` gives you `printf` and `scanf` ✅', stdlib: '`stdlib.h` is handy for `malloc`, `rand`, `atoi` and more 👍', string: '`string.h` has string tools like `strlen` and `strcpy` 🧵', math: '`math.h` gives you `sqrt`, `pow`, `floor`… 📐', ctype: '`ctype.h` lets you test characters with `isdigit`, `toupper`… 🔤'};
+    return h[m[1]] || `Including \`${m[1]}.h\` gives you its functions 📚`;
+  }
+  if ((m = /^#\s*define\s+(\w+)/.exec(tt))) return `A constant! \`${m[1]}\` gets swapped in everywhere before the program runs 🔁`;
+  if (tt[0] === '#') return null;
+  if (/^(int|void)\s+main\s*\(/.test(tt)) return 'That\'s `main`, where every C program starts running 🚀';
+  if ((m = BOT_DECL.exec(tt)) && /;$/.test(tt)) {
+    const ds = botSplit(m[2].replace(/;\s*$/, '')).map(d => /^\s*(\*+)?\s*(\w+)\s*((?:\[[^\]]*\])*)/.exec(d)).filter(Boolean);
+    if (!ds.length) return null;
+    const arr = ds.find(d => d[3] && !d[1]), ptr = ds.find(d => d[1]);
+    if (arr) { const dim = /\[\s*(\d+)\s*\]/.exec(arr[3]); return dim ? `\`${arr[2]}\` is an array of ${dim[1]} items. Counting starts at 0, so the indexes are \`0\` to \`${dim[1] - 1}\` 📚` : `\`${arr[2]}\` is an array: many values under one name 📚`; }
+    if (ptr) return `\`${ptr[2]}\` is a pointer. It stores a memory address 📍`;
+    const names = ds.map(d => '`' + d[2] + '`').join(', ');
+    return `You created ${names} (${m[1]}). It ${BOT_WHAT[m[1]] || 'stores a value'} 📦`;
+  }
+  if ((m = /^(?:static\s+)?(?:int|void|float|double|char|long)\s+\*?(\w+)\s*\([^;]*\)\s*\{?$/.exec(tt)) && m[1] !== 'main') return `You wrote a function named \`${m[1]}\`. Great way to reuse code 🧩`;
+  if (/^return\s+0\s*;/.test(tt)) return '`return 0;` tells the system everything went fine ✅';
+  if (/^return\b/.test(tt)) return '`return` sends a value back to whoever called the function ↩️';
+  if (/\bscanf\s*\(/.test(tt)) return '`scanf` waits for the user to type a value. The `&` gives it the variable\'s address 👂';
+  if (/\bprintf\s*\(/.test(tt)) return /\\n/.test(l.t) ? '`printf` prints to the screen, and `\\n` moves to a new line ✍️' : '`printf` prints to the screen ✍️';
+  if (/\bputs\s*\(/.test(tt)) return '`puts` prints a line of text and adds the new line for you ✍️';
+  if (/\bfgets\s*\(/.test(tt)) return '`fgets` reads a whole line of text, spaces included 📥';
+  if (/%\s*10\b/.test(tt)) return '`% 10` gives the **last digit** of a number 🔢';
+  if (/\/=?\s*10\b/.test(tt)) return 'Dividing by 10 chops off the last digit ✂️';
+  if (/%\s*2\b/.test(tt)) return '`% 2` is the remainder after dividing by 2. A remainder of 0 means even 🎯';
+  if (/^for\s*\(/.test(tt)) return 'A `for` loop: start; condition; step. It repeats the block until the condition is false 🔁';
+  if (/^\}\s*while\s*\(/.test(tt)) return 'The `while` at the end of a do-while decides whether to go around again 🔂';
+  if (/^while\s*\(/.test(tt)) return '`while` repeats as long as the condition is true. Make sure something inside changes it so it ends! ⏳';
+  if (/^do\b/.test(tt)) return '`do { … } while (…)` runs the block at least once 🔂';
+  if (/^(?:\}\s*)?else\s+if\b/.test(tt)) return 'Another condition to test if the one before was false ↪️';
+  if (/^(?:\}\s*)?else\b/.test(tt)) return '`else` runs when the `if` condition was false ↩️';
+  if (/^if\s*\(/.test(tt)) return 'An `if` runs the block only when the condition is true 🔀';
+  if (/^switch\s*\(/.test(tt)) return '`switch` picks one `case` to run based on the value 🎛️';
+  if (/^break\s*;/.test(tt)) return '`break` jumps out of the loop or switch right away 🛑';
+  if (/^continue\s*;/.test(tt)) return '`continue` skips to the next round of the loop ⏭️';
+  if (/^(struct|union|enum)\b/.test(tt)) return 'A struct groups related values under one name 📦';
+  if (/\b(malloc|calloc)\s*\(/.test(tt)) return 'Asking the system for memory. Remember to `free` it later 🧹';
+  if (/\bfree\s*\(/.test(tt)) return 'Giving memory back once you\'re done with it 🧹';
+  if ((m = /(\w+)\s*\+=/.exec(tt))) return `\`${m[1]} += …\` adds to \`${m[1]}\` and keeps the result, like a running total ➕`;
+  if ((m = /(\w+)\s*\+\+|\+\+\s*(\w+)/.exec(tt))) return `\`${m[1] || m[2]}++\` adds 1 to \`${m[1] || m[2]}\` ➕`;
+  if ((m = /^(\w+)\s*\[[^\]]+\]\s*=[^=]/.exec(tt))) return `Writes a value into one slot of the array \`${m[1]}\` 🎯`;
+  if ((m = /^(\w+)\s*=[^=].*;$/.exec(tt))) return `Stores a new value in \`${m[1]}\` 📥`;
+  return null;
+}
+
+/* ---------- applying a fix ---------- */
+function botApplyFix(fix, btn){
+  let Ls = code.value.split('\n');
+  if (Ls[fix.line] !== fix.before) {
+    // the line changed since I wrote that message: look again instead of guessing
+    const now = botAnalyze(code.value).issues.find(i => i.line === fix.line + 1 && i.fix && i.fix.kind === fix.kind);
+    if (!now) { btn.disabled = true; btn.textContent = 'Already sorted ✅'; return; }
+    fix = now.fix;
+  }
+  const nl = fix.apply(fix.before);
+  const start = Ls.slice(0, fix.line).join('\n').length + (fix.line ? 1 : 0);
+  insertAt(start, start + fix.before.length, nl, start + nl.length);
+  btn.disabled = true; btn.textContent = 'Fixed ✅'; botFace('😄');
+}
+
+/* ---------- goals, plans and chat ---------- */
+const BOT_GENERIC = ['Decide what input the program needs and declare variables for it', 'Read the input with `scanf`', 'Do the calculation step by step (use `if` or loops where needed)', 'Show the answer with `printf`'];
+const BOT_PLANS = [
+  [/digit.*(sum|add|total)|(sum|add|total).*digit/, 'Sum of digits', ['Declare `n` and `sum = 0`, then read `n` with `scanf`', 'Loop `while (n > 0)`', 'Take the last digit with `n % 10` and add it to `sum`', 'Remove that digit with `n = n / 10`', 'After the loop, `printf` the `sum`']],
+  [/reverse/, 'Reverse a number', ['Declare `n` and `rev = 0`, then read `n`', 'Loop `while (n > 0)`', 'Take the last digit with `n % 10`', 'Build the answer with `rev = rev * 10 + digit`', 'Remove the digit with `n = n / 10`, then print `rev` after the loop']],
+  [/palindrome/, 'Palindrome check', ['Read the number and keep a copy of it', 'Reverse it with a `% 10` and `/ 10` loop', 'Compare the reversed number with the copy using `==`', '`printf` "Palindrome" or "Not a palindrome"']],
+  [/armstrong/, 'Armstrong number', ['Read `n` and keep a copy', 'Loop over the digits with `% 10` and `/ 10`', 'Add each digit cubed (`d * d * d`) to `sum`', 'Compare `sum` with the original number and print the result']],
+  [/fibonacci|fibo/, 'Fibonacci series', ['Read how many terms you want (`n`)', 'Start with `a = 0` and `b = 1`', 'Loop `n` times: print `a`, then `next = a + b`', 'Shift along: `a = b; b = next;`']],
+  [/factorial/, 'Factorial', ['Read `n` and set `fact = 1`', 'Loop `i` from 1 to `n`', 'Multiply: `fact = fact * i`', '`printf` the factorial']],
+  [/prime/, 'Prime number check', ['Read `n` and assume it\'s prime (`flag = 1`)', 'Loop `i` from 2 up to `n / 2`', 'If `n % i == 0` then it isn\'t prime: set `flag = 0` and `break`', 'Print the answer from `flag` (remember 0 and 1 are not prime)']],
+  [/leap/, 'Leap year check', ['Read the `year`', 'Leap if divisible by 4 **and** not by 100, **or** divisible by 400', 'Use `if` with `&&` and `||` to test that', 'Print leap or not leap']],
+  [/even|odd/, 'Even or odd', ['Read a number `n`', 'Test `n % 2 == 0` with `if`', 'Print "Even" in the `if`, "Odd" in the `else`']],
+  [/swap/, 'Swap two numbers', ['Read `a` and `b`', 'Use a helper: `temp = a; a = b; b = temp;`', 'Print `a` and `b` after the swap']],
+  [/largest|biggest|greatest|maximum|\bmax\b/, 'Largest number', ['Read the numbers', 'Assume the first is the largest: `max = a`', 'Compare each other number with `max` using `if`', 'Print `max`']],
+  [/smallest|minimum|\bmin\b/, 'Smallest number', ['Read the numbers', 'Assume the first is the smallest: `min = a`', 'Compare each other number with `min` using `if`', 'Print `min`']],
+  [/sort/, 'Sorting', ['Store the numbers in an array', 'Use two loops (outer `i`, inner `j`)', 'If `a[j] > a[j + 1]` swap them using a temp variable', 'Print the array after sorting']],
+  [/table/, 'Multiplication table', ['Read the number `n`', 'Loop `i` from 1 to 10', 'Print `n * i` each time with `printf("%d x %d = %d\\n", n, i, n * i)`']],
+  [/pattern|star|triangle|pyramid/, 'Pattern', ['Read the number of rows', 'Outer loop = rows (`i`)', 'Inner loop = what to print in each row (`j`)', 'Print `*` in the inner loop and `\\n` after it']],
+  [/area|circle|rectangle|perimeter/, 'Area', ['Declare variables as `float` or `double`', 'Read the sizes with `scanf` (`%f`, or `%lf` for double)', 'Apply the formula (circle = `3.14 * r * r`)', 'Print the area with `%.2f`']],
+  [/interest/, 'Simple interest', ['Read principal, rate and time as `float`', 'Compute `si = p * r * t / 100`', 'Print `si` with `%.2f`']],
+  [/average|mean/, 'Average', ['Read the numbers (use a loop if there are many)', 'Add them into `sum`', 'Divide by how many there are (use a `float` so decimals stay)', 'Print the average']],
+  [/temperature|celsius|fahrenheit/, 'Temperature converter', ['Read the temperature as `float`', 'Use `f = c * 9 / 5 + 32` (or the reverse)', 'Print the result with `%.2f`']],
+  [/calculator/, 'Calculator', ['Read two numbers and an operator (`char`)', 'Use `switch` on the operator with a `case` for each of + - * /', 'Print the result (check for divide by zero!)']],
+  [/vowel/, 'Count vowels', ['Read a string', 'Loop through each character until `\\0`', 'Use `if` to check if it is a, e, i, o or u (upper or lower)', 'Count them and print the total']],
+  [/gcd|hcf/, 'GCD', ['Read `a` and `b`', 'Loop `while (b != 0)`', 'Set `r = a % b; a = b; b = r;`', 'The GCD is `a` when the loop ends']],
+  [/count.*digit|digit.*count/, 'Count digits', ['Read `n` and set `count = 0`', 'Loop `while (n > 0)`', 'Do `n = n / 10` and `count++`', 'Print `count`']],
+  [/hello/, 'Hello World', ['Add `#include <stdio.h>`', 'Write `int main() { ... }`', 'Use `printf("Hello, World!\\n");` and `return 0;`']],
+  [/array/, 'Array program', ['Declare the array, e.g. `int a[5];`', 'Fill or read it with a `for` loop', 'Process it with another loop', 'Print the result']],
+  [/sum|add|addition|total/, 'Sum of numbers', ['Declare variables for the numbers (or `n` and `sum = 0`)', 'Read them with `scanf`', 'Add them (use a loop if there are many)', 'Print the result with `printf`']]
+];
+function botPlanFor(goal){
+  const g = goal.toLowerCase();
+  for (const [re, name, steps] of BOT_PLANS) if (re.test(g)) return {name, steps};
+  return {name: goal, steps: BOT_GENERIC};
+}
+const BOT_STOP = new Set(['the', 'and', 'for', 'program', 'write', 'make', 'find', 'check', 'number', 'numbers', 'with', 'using', 'that', 'this', 'input', 'given', 'from', 'out', 'print', 'show', 'display']);
+const BOT_SYN = {add: 'sum', addition: 'sum', total: 'sum', plus: 'sum', odd: 'even', fibo: 'fibonacci', fib: 'fibonacci', fact: 'factorial', reversal: 'reverse', reversing: 'reverse', palin: 'palindrome', hcf: 'gcd'};
+const BOT_GENERIC_TITLES = new Set(['Input program', 'While loop', 'For loop', 'If / else program', 'Switch case', 'Array program', 'Pointers example', 'Recursion example', 'Two-dimensional array']);
+const botStems = s => s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !BOT_STOP.has(w)).map(w => { w = w.replace(/(ing|es|s)$/, '') || w; return BOT_SYN[w] || w; });
+function botMatch(goal, title){
+  if (!title || BOT_GENERIC_TITLES.has(title)) return 0;
+  const a = botStems(goal), b = botStems(title);
+  if (!a.length || !b.length) return 0;
+  return a.some(x => b.some(y => x === y || (x.length >= 4 && y.length >= 4 && (x.startsWith(y) || y.startsWith(x))))) ? 1 : -1;
+}
+function botSetGoal(text){
+  let g = text.replace(/^\s*(?:i\s*(?:am|'m|will|want to|wanna)?\s*(?:going to|gonna|want to|wanna)?\s*(?:do|write|make|build|create|try|code)?\s*)?(?:a|an|the)?\s*/i, '').replace(/\bprogram\b/i, '').replace(/[.!?]+$/, '').trim();
+  if (g.length < 2) g = text.trim();
+  bot.goal = g.slice(0, 60); bot.plan = botPlanFor(bot.goal); bot.hintIdx = 0;
+  botSay(botPick(['Great choice! 😄', 'Ooh, nice one! 🤩', 'Love it! 💪', 'Awesome pick! 🎯']) + ' **' + bot.goal + '**.');
+  botShowPlan(true);
+}
+function botShowPlan(first){
+  const p = bot.plan || {steps: BOT_GENERIC};
+  botSay('Here\'s a simple plan:\n' + p.steps.map((s, i) => (i + 1) + '. ' + s).join('\n') + (first ? '\n\nGo ahead and start typing. I won\'t interrupt while you write. Ask me anything, or say **done** when you finish and I\'ll check your program 👀' : ''));
+  botMainChips();
+}
+function botAskGoal(){
+  bot.goal = ''; bot.plan = null; bot.hintIdx = 0;
+  botSay('Hi! I\'m your **Code buddy** 🤖💚 Ask me anything about C, or tell me what you want to build.');
+  botSay('First things first: **what program are you going to write today?**');
+  botChips(['Sum of digits', 'Fibonacci series', 'Prime number check', 'Even or odd']);
+}
+function botHint(){
+  const src = code.value, A = botAnalyze(src), steps = (bot.plan || {steps: BOT_GENERIC}).steps;
+  if (A.issues.length) { const i = A.issues[0]; botSay('Before the next step, let\'s fix this one first 👇\n**Line ' + i.line + ':** ' + i.msg, 'oops', {fix: i.fix}); return; }
+  if (!/#\s*include/.test(src)) { botSay('💡 Start at the top with `#include <stdio.h>` so you can use `printf` and `scanf`.'); return; }
+  if (A.L.filter(l => l.tt).length <= 4) { botSay('💡 Step 1: ' + steps[0]); bot.hintIdx = 1; return; }
+  const i = bot.hintIdx % steps.length; bot.hintIdx++;
+  botSay('💡 Hint (' + (i + 1) + '/' + steps.length + '): ' + steps[i]);
+}
+function botCheckNow(){
+  const src = code.value, A = botAnalyze(src), le = lint(src);
+  const list = A.issues.slice();
+  if (le) { const m = /^Line (\d+):\s*(.*)$/s.exec(le); list.unshift({line: m ? +m[1] : 0, msg: botCap(m ? m[2] : le) + '. ' + hintFor(le), fix: null}); }
+  if (!list.length) { botSay('I checked all ' + A.L.filter(l => l.tt).length + ' lines and spotted **no mistakes** 🎉 Press RUN to see it work!', 'yay'); return; }
+  botSay('I found ' + list.length + ' thing' + (list.length === 1 ? '' : 's') + ' to look at:');
+  list.slice(0, 4).forEach(i => botSay('Oopppsss 😢 **Line ' + i.line + ':** ' + i.msg, 'oops', {fix: i.fix}));
+  if (list.length > 4) botSay('…and ' + (list.length - 4) + ' more. Fix these first and ask me again 😊');
+  bot.active = new Set(A.issues.map(i => i.key)); bot.hadIssues = true;
+}
+function botExplain(){
+  const A = botAnalyze(code.value), rows = [];
+  for (const l of A.L) { const c = botComment(l); if (c) rows.push('**' + l.ln + ':** ' + c); if (rows.length >= 14) break; }
+  botSay(rows.length ? 'Here\'s what your lines do:\n' + rows.join('\n') : 'There\'s nothing to explain yet. Write a few lines and I\'ll walk through them 😄');
+}
+function botHear(text){
+  const t = text.toLowerCase();
+  if (botKnow(text)) return;
+  if (!bot.goal) {
+    if (/^\s*(hi+|hello+|hey+|yo|hola|good (morning|evening|afternoon))\b[\s!.]*$/.test(t)) { botSay('Hi there! 😄 So, **what program are you going to write today?**'); return; }
+    botSetGoal(text); return;
+  }
+  if (/\b(new|another|different|next)\b.*\b(program|one|task)\b|^new\b|start over|change (the )?(program|goal)/.test(t)) { botSay('Sure, a fresh start! 🆕'); botAskGoal(); return; }
+  if (/\b(thank|thanks|thx|tysm)\b/.test(t)) { botSay(botPick(['You\'re welcome! 😄 Keep going!', 'Anytime! 💚', 'Happy to help! 🤗'])); return; }
+  if (/\b(hint|help|stuck|next step|what next|what now|how do i|don'?t know)\b/.test(t)) { botHint(); return; }
+  if (/\b(explain|what does|meaning|walk me)\b/.test(t)) { botExplain(); return; }
+  if (/\b(check|review|wrong|mistake|error|bug|fix|correct)\b/.test(t)) { botCheckNow(); return; }
+  if (/\b(plan|steps|approach|algorithm)\b/.test(t)) { botShowPlan(false); return; }
+  if (/\b(done|finished|completed|ready)\b/.test(t)) { botSay('Awesome! 🎉 Let me check your whole program…'); botCheckNow(); return; }
+  if (/^\s*(hi+|hello+|hey+)\b/.test(t)) { botSay('Hey! 👋 Keep coding. Ask me anything, or say **done** when you finish 👀'); return; }
+  botSay('Hmm, I don\'t have an answer for that yet 🤔 Try asking about a C topic like **pointers**, **arrays**, **strings**, **loops**, **functions**, **structs** or **malloc**, ask for an **example** (e.g. *example of gcd*), or say **topics** to see everything I know. Say **done** when your program is finished and I\'ll check it.');
+  botMainChips();
+}
+
+/* ---------- watching you type ---------- */
+function botSchedule(){ /* the bot never reacts while you type */ }
+/* is the program finished? balanced brackets, has main(), ends with the closing brace */
+function botComplete(src, A){
+  const t = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/"(?:\\.|[^"\\\n])*"/g, '""').replace(/'(?:\\.|[^'\\\n])*'/g, "' '");
+  const pairs = {'}': '{', ')': '(', ']': '['}, st = []; let braces = 0;
+  for (const ch of t) {
+    if ('{(['.includes(ch)) { st.push(ch); if (ch === '{') braces++; }
+    else if (pairs[ch]) { if (st.pop() !== pairs[ch]) return false; }
+  }
+  if (st.length || !braces) return false;
+  if (!/\bmain\s*\(/.test(t)) return false;
+  if (!/\}\s*$/.test(t.trim())) return false;
+  return A.L.filter(l => l.tt).length > 4;
+}
+/* stays silent while you type; talks only when the whole program is complete */
+function botAuto(){
+  const src = code.value;
+  if (src === bot.lastDone) return;
+  const A = botAnalyze(src);
+  if (!botComplete(src, A)) return;
+  bot.lastDone = src;
+  const issues = A.issues.slice(), le = lint(src);
+  if (le) { const m = /^Line (\d+):\s*(.*)$/s.exec(le); issues.unshift({key: 'lint:' + le, line: m ? +m[1] : 0, msg: botCap(m ? m[2] : le) + '. ' + hintFor(le), fix: null}); }
+  if (issues.length) {
+    bot.hadIssues = true;
+    botSay('Your program looks complete 🧐 I checked it and found **' + issues.length + ' thing' + (issues.length === 1 ? '' : 's') + '** to fix:');
+    issues.slice(0, 3).forEach(i => botSay('Oopppsss 😢 **Line ' + i.line + ':** ' + i.msg, 'oops', {fix: i.fix}));
+    if (issues.length > 3) botSay('…and ' + (issues.length - 3) + ' more. Fix these first and I will check again 😊');
+    return;
+  }
+  if (bot.hadIssues) { bot.hadIssues = false; botSay(botPick(['Yaaay! 😄 All fixed, the whole program looks right now!', 'Woohoo! 🎉 Mistakes fixed. Nice work!']), 'yay'); return; }
+  botSay('Your program is complete 🎉 I checked all **' + A.L.filter(l => l.tt).length + ' lines** and found **no mistakes** ✅ Press **RUN** to see it work!', 'yay');
+}
+
+/* ---------- reacting to Run ---------- */
+function botOnRun(ok, info){
+  if (ok) {
+    let m = botPick(['Yaaay! 🎉 Your program ran perfectly!', 'Woohoo 😄 No errors. Nice work!', 'Boom! 💥 It works! Great job!', 'Happy dance time 💃 It ran without a single error!']);
+    if (info.exit) m += '\n(It finished with exit code ' + info.exit + '.)';
+    const title = autoTitle(code.value), v = bot.goal ? botMatch(bot.goal, title) : 0;
+    if (v === 1) m += '\nAnd it matches your goal: **' + bot.goal + '** ✅';
+    else if (v === -1) m += '\nOne thing 🤔 you said **' + bot.goal + '**, but this code looks like **' + title + '**. Is that what you wanted?';
+    botSay(m, 'yay');
+  } else {
+    const mm = /^Line (\d+):\s*(.*)$/s.exec(info.msg), n = mm ? +mm[1] : 0, txt = mm ? mm[2] : info.msg;
+    const A = botAnalyze(code.value), iss = A.issues.find(i => n && (i.line === n || i.line === n - 1) && i.fix) || null;
+    botSay(botPick(['Oopppsss 😭', 'Oopppsss 😢', 'Ooopsss 🙈']) + ' ' + (n ? '**Line ' + n + ':** ' : '') + botCap(txt) + '.\n💡 ' + hintFor(info.msg), 'oops', {fix: iss && iss.fix});
+  }
+}
+function botNeed(){
+  if (window.__botNeed) return; window.__botNeed = true;
+  botSay('I\'m waiting for you 👀 Type your input in the black output box and press **Enter**.');
+}
+function botReset(kind, h){
+  bot.gen++; bot.queue = []; bot.busy = false; clearTimeout(bot.timer);
+  chatLog.innerHTML = ''; bot.lastDone = ''; bot.hadIssues = false; bot.active = new Set(); bot.hintIdx = 0; bot.nudged = false;
+  bot.seen = new Set(botScan(code.value).filter(l => l.tt).map(l => l.tt));
+  botFace('🤖');
+  if (kind === 'load' && h) {
+    bot.goal = titleOf(h); bot.plan = botPlanFor(bot.goal);
+    botSay('Welcome back to **' + bot.goal + '**! 😄 Ask me anything, or say **done** when you finish.');
+    botMainChips();
+  } else botAskGoal();
+}
+const botSend = () => { const v = chatText.value; if (!v.trim()) return; chatText.value = ''; botUser(v); chatText.focus(); };
+chatForm.addEventListener('submit', e => e.preventDefault());
+$('chatSend').addEventListener('click', botSend);
+chatText.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); botSend(); } });
+bot.seen = new Set(botScan('#include <stdio.h>\n\nint main() {\n  \n  return 0;\n}\n').filter(l => l.tt).map(l => l.tt));
+botAskGoal();
+
+code.value = '#include <stdio.h>\n\nint main() {\n  \n  return 0;\n}\n'; lines();
+
+/* ---------- knowledge base: answers C questions ---------- */
+let BOT_KB = null;
+function botLoadKB(){
+  BOT_KB = [];
+  const raw = (document.getElementById('kb') || {}).textContent || '';
+  for (const part of raw.split(/^## /m).slice(1)) {
+    const nl = part.indexOf('\n'), head = part.slice(0, nl), body = part.slice(nl + 1).trim();
+    const k = head.lastIndexOf(' || '), title = head.slice(k + 4).trim(), keys = head.slice(0, k).split('||').map(x => x.trim()).filter(Boolean);
+    const res = []; for (const x of keys) { try { res.push(new RegExp(x, 'i')); } catch (_) {} }
+    BOT_KB.push({res, title, body});
+  }
+}
+function botCmd(t){
+  let m;
+  if (/^(please )?(run|execute)( (it|my code|the (code|program)|program|code))?[.!]*$/.test(t)) { botSay('Running your program… ▶️'); $('run').click(); return true; }
+  if (/^clear( the)?( chat)?[.!]*$|^reset chat$/.test(t)) { botReset(); return true; }
+  if (/\b(dark)\b.*\b(mode|theme)\b|^go dark$|\bnight mode\b/.test(t)) { $('darkBtn').click(); botSay('Dark mode on 🌙'); return true; }
+  if (/\b(light)\b.*\b(mode|theme)\b|^go light$|\bday mode\b/.test(t)) { $('lightBtn').click(); botSay('Light mode on ☀️'); return true; }
+  if (/\b(open|show|see)\b.*\b(history|saved|my programs|menu)\b/.test(t)) { $('menuBtn').click(); botSay('Here are your saved programs 📂'); return true; }
+  if (/\b(how many|count|number of)\b.*\blines?\b/.test(t)) { const n = code.value.split('\n').filter(x => x.trim()).length; botSay('Your program has **' + n + '** non-empty line' + (n === 1 ? '' : 's') + ' (' + code.value.split('\n').length + ' in total).'); return true; }
+  if (/\bwhat('?s| is) the (time|date)\b|\bcurrent (time|date)\b|^(time|date)\??$/.test(t)) { botSay('It is **' + new Date().toLocaleString() + '** ⏰'); return true; }
+  if ((m = /^(?:what(?:'?s| is)\s+|calc(?:ulate)?\s+|solve\s+)?([\d\s+\-*\/%().]+?)\s*(?:=|\?)?$/.exec(t)) && /\d\s*[+\-*\/%]\s*[\d(]/.test(m[1])) {
+    try { const v = Function('"use strict";return (' + m[1] + ')')(); if (typeof v === 'number' && isFinite(v)) { botSay('**' + m[1].trim() + ' = ' + (Math.round(v * 1e9) / 1e9) + '** 🧮' + (/\//.test(m[1]) && !/\./.test(m[1]) ? '\n(In C, `int / int` drops the decimals.)' : '')); return true; } } catch (_) {}
+  }
+  return false;
+}
+function botKnow(text){
+  const t = text.trim(), low = t.toLowerCase().replace(/\s+/g, ' ');
+  if (botCmd(low)) return true;
+  if (!BOT_KB) botLoadKB();
+  const qLike = /\?|^(what|why|how|when|which|explain|difference|can|does|do|is|are|tell|show|write|example|help|give|define|describe|list)\b/i.test(t);
+  if (/\b(check|review)\b.*\b(my )?code\b|\b(explain|walk)\b.*\b(my|this)\b.*\bcode\b|^(a )?hint\b|\bgive me a hint\b|\bdone\b|\bfinished\b/i.test(t)) return false;
+  let best = null, bestLen = 0;
+  for (const e of BOT_KB) {
+    const chat = e.title.charAt(0) === '~', free = chat || e.title === 'All topics I know' || e.title === 'What I can do';
+    if (!free && !bot.goal && !qLike) continue;
+    for (const r of e.res) { const m = r.exec(low); if (m && m[0].length + (chat ? 0 : 1) > bestLen) { best = e; bestLen = m[0].length + (chat ? 0 : 1); } }
+  }
+  if (!best) return false;
+  if (best.title.charAt(0) === '~') {
+    botSay(botPick(best.body.split(/\n---\n/)));
+    if (best.title === '~greet' && !bot.goal) botSay('So, **what program are you going to write today?**');
+    return true;
+  }
+  botSay('**' + best.title + '**\n' + best.body);
+  botChips(['💡 Give me a hint', '🔍 Check my code', '📚 All topics', '🆕 New program']);
+  return true;
+}
+chatLog.addEventListener('click', e => {
+  const b = e.target.closest('.cp'); if (!b) return;
+  const txt = b.parentNode.querySelector('pre').textContent;
+  const done = () => { b.textContent = 'Copied ✓'; setTimeout(() => b.textContent = 'Copy', 1500); };
+  try { navigator.clipboard.writeText(txt).then(done, done); } catch (_) { done(); }
+});
+$('botClear').addEventListener('click', () => botReset());
+/* ---------- each person's own programs: saved to their account, fallback = this browser ---------- */
+var cloud = {col: null, synced: {}, timer: 0, note: null};
+function cloudNote(txt){
+  if (!cloud.note) {
+    const d = $('drawer'), h = d && d.querySelector('.dhead'); if (!h) return;
+    cloud.note = document.createElement('div');
+    cloud.note.style.cssText = 'padding:8px 16px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line)';
+    h.insertAdjacentElement('afterend', cloud.note);
+  }
+  cloud.note.textContent = txt;
+}
+function cloudSave(){
+  if (!cloud.col) return;
+  clearTimeout(cloud.timer);
+  cloud.timer = setTimeout(async () => {
+    try {
+      const now = {};
+      for (const h of history) { const j = JSON.stringify(h); now[h.id] = j; if (cloud.synced[h.id] !== j) await cloud.col.doc('p' + h.id).set(JSON.parse(j)); }
+      for (const id in cloud.synced) if (!(id in now)) await cloud.col.doc('p' + id).delete();
+      cloud.synced = now;
+    } catch (e) { cloud.col = null; cloudNote('💾 Saved in this browser only (sign in with edit access to save to your account)'); }
+  }, 900);
+}
+cloudNote('💾 Saved in this browser');
+(async () => {
+  try {
+    if (!window.claude || !claude.use) return;
+    const user = await claude.use('user'), db = await claude.use('db');
+    if (!user || !db) return;
+    const id = await user.id(); if (!id) return;
+    const col = db.collection('data/users/' + id);
+    const snap = await col.get();
+    const remote = []; snap.docs.forEach(d => { const v = d.data(); if (v && v.code && v.id) remote.push(v); });
+    const map = new Map(); for (const h of history) map.set(h.id, h);
+    for (const r of remote) { const l = map.get(r.id); if (!l || (r.time || 0) > (l.time || 0)) map.set(r.id, r); }
+    history = [...map.values()].sort((a, b) => (b.time || 0) - (a.time || 0)).slice(0, 100);
+    cloud.synced = {}; for (const r of remote) cloud.synced[r.id] = JSON.stringify(r);
+    cloud.col = col; cloudNote('☁️ Saved to your account, private to you');
+    persist(); renderHist();
+  } catch (e) {}
+})();
+
+</script>
+<script type="text/plain" id="kb">
+## help||what can you do||who are you||^help\??$ || What I can do
+I'm your **Code buddy**. I can:
+- answer **C questions** (pointers, arrays, loops, strings, malloc, structs, scanf/printf…)
+- explain **errors** (segmentation fault, undeclared, expected `;`…)
+- **check** your code, give **hints**, **explain** your code line by line
+- show **examples** (try "example of factorial", "fibonacci", "prime", "palindrome")
+Just ask, or say **done** when your program is finished.
+## pointer||dereference||address.of || Pointers
+A **pointer** stores the *address* of another variable.
+~~~
+int x = 10;
+int *p = &x;     // p holds the address of x
+printf("%d", *p); // *p reads the value at that address -> 10
+*p = 20;         // changes x to 20
+~~~
+`&` = "address of", `*` = "value at". Always point a pointer at valid memory before using `*p`.
+## malloc||calloc||realloc||dynamic memory||memory leak || Dynamic memory
+~~~
+#include <stdlib.h>
+int *a = malloc(5 * sizeof(int));
+if (a == NULL) return 1;   // always check
+for (int i = 0; i < 5; i++) a[i] = i;
+free(a);                   // give memory back
+~~~
+Every `malloc` needs one `free`, otherwise you get a **memory leak**.
+## 2d array||two.dimensional||matrix || 2D arrays
+~~~
+int m[2][3] = {{1,2,3},{4,5,6}};
+for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 3; j++)
+        printf("%d ", m[i][j]);
+~~~
+First index = row, second = column. Use a nested loop to visit every item.
+## \barrays?\b || Arrays
+An array holds many values of the same type, indexed from **0**.
+~~~
+int a[5] = {10, 20, 30, 40, 50};
+a[0] = 99;                       // first item
+int n = sizeof(a) / sizeof(a[0]); // length = 5
+~~~
+Valid indexes are `0` to `n-1`. Going outside is undefined behaviour (crash or garbage).
+## \bstrings?\b||char array||strlen||strcpy||strcmp||strcat || Strings
+A string is a `char` array ending with `'\0'`.
+~~~
+#include <string.h>
+char s[20] = "hello";
+printf("%d", strlen(s));        // 5
+strcpy(s, "hi");                // copy
+if (strcmp(s, "hi") == 0) {}    // compare (NOT ==)
+strcat(s, "!");                 // join
+~~~
+Never compare strings with `==`, use `strcmp`.
+## scanf||user input||read input||take input || scanf (input)
+~~~
+int n; float f; char name[20];
+scanf("%d", &n);      // & needed for numbers
+scanf("%f", &f);
+scanf("%s", name);    // no & for arrays; stops at a space
+~~~
+Use the matching format: `%d` int, `%f` float, `%lf` double, `%c` char, `%s` string.
+## printf||format specifier||%[dfsc]\b || printf formats
+~~~
+printf("%d", 5);       // int
+printf("%.2f", 3.14159);// 3.14
+printf("%c", 'A');     // char
+printf("%s", "hi");    // string
+printf("%5d|%-5d|", 7, 7); // width
+~~~
+`\n` = new line. A wrong specifier (like `%d` for a float) prints garbage.
+## data types?||sizeof|size of||difference between (int|float) || Data types
+`int` whole numbers (4 bytes), `float` decimals (4), `double` bigger decimals (8), `char` one character (1), `long` bigger integers.
+~~~
+printf("%zu", sizeof(int)); // 4
+~~~
+## \bloops?\b||for loop||while loop||do.?while || Loops
+~~~
+for (int i = 1; i <= 5; i++) printf("%d ", i);
+
+int i = 1;
+while (i <= 5) { printf("%d ", i); i++; }
+
+do { printf("hi"); } while (0);   // runs at least once
+~~~
+`for` when you know the count, `while` when you don't, `do-while` to run at least once. `break` leaves a loop, `continue` skips to the next round.
+## \bif.?else\b||\bswitch\b||conditional || if / else / switch
+~~~
+if (n > 0) printf("positive");
+else if (n < 0) printf("negative");
+else printf("zero");
+
+switch (d) { case 1: printf("Mon"); break; default: printf("?"); }
+~~~
+Don't forget `break` in each `case`.
+## recursion||recursive || Recursion
+A function that calls itself. It needs a **base case** that stops it.
+~~~
+int fact(int n) {
+    if (n <= 1) return 1;     // base case
+    return n * fact(n - 1);   // smaller problem
+}
+~~~
+## \bfunctions?\b||\bparameters?\b||prototype||return value || Functions
+~~~
+int add(int a, int b) { return a + b; }
+int main() { printf("%d", add(2, 3)); }
+~~~
+Define (or declare) a function **before** you call it. `void` means returns nothing. C passes values by copy, pass a pointer to change the original.
+## \bstructs?\b||structure||typedef||\benum\b || Structs
+~~~
+struct Student { char name[20]; int marks; };
+struct Student s = {"Ravi", 90};
+printf("%s %d", s.name, s.marks);   // use . (or -> with a pointer)
+~~~
+## fopen||fclose||file handling||file i/o || File handling
+~~~
+FILE *fp = fopen("a.txt", "w");
+fprintf(fp, "hello");
+fclose(fp);
+~~~
+Check `fp != NULL` after `fopen`. Files are not available in this browser sandbox.
+## operators?||modulus||increment||\+\+ || Operators
+`+ - * / %` arithmetic, `++ --` add/subtract 1, `== != < > <= >=` compare, `&& || !` logic. `%` gives the remainder (`7 % 3` = 1). `i++` uses then adds, `++i` adds then uses.
+## = *vs *==||== vs =||single equal||assignment.*equal || = vs ==
+`=` **assigns**, `==` **compares**.
+~~~
+if (x = 5)  { }   // WRONG: sets x to 5, always true
+if (x == 5) { }   // right
+~~~
+## segmentation||segfault||core dumped || Segmentation fault
+Your program touched memory it doesn't own. Common causes: array index out of range, using a pointer that is `NULL`/uninitialised, `scanf("%d", n)` missing the `&`, endless recursion, writing past a string's size. Check every index and pointer first.
+## undeclared||not declared||implicit declaration||undefined (reference|function) || Undeclared / undefined name
+The compiler doesn't know that name. Fix by: declaring the variable before use (`int x;`), fixing a typo or capital letter (`Count` ≠ `count`), adding the right `#include` (e.g. `<math.h>` for `sqrt`), or defining the function above `main`.
+## expected ['"]?;||missing semicolon||syntax error || Syntax error / missing ;
+Look at the **line before** the reported one, a missing `;`, `)` or `}` is usually there. Check every `(` has a `)` and every `{` has a `}`.
+## infinite loop||never ends||not stopping||hangs? || Infinite loop
+The loop condition never becomes false. Check: you update the counter (`i++`), you used `<` not `>`, and you didn't put `;` right after `for(...)` or `while(...)`.
+## uninitiali[sz]ed||garbage value||random value || Garbage values
+A local variable has no value until you give one. Always initialise: `int sum = 0;`.
+## integer division||5 */ *2||decimal.*(wrong|zero)||division.*zero || Integer division
+`5 / 2` is `2` because both are `int`. Make one side decimal: `5 / 2.0` or `(float)5 / 2` to get `2.5`. Dividing by zero crashes, so check the divisor first.
+## \bgets\b||\bfgets\b||buffer overflow||space in (string|input) || Reading text safely
+`gets` is unsafe, use `fgets(s, sizeof s, stdin)`. It also reads spaces. `scanf("%s")` stops at the first space.
+## ampersand||why.*& || Why & in scanf
+`scanf` must know *where* the variable lives to store the value, so you pass its address with `&`: `scanf("%d", &n)`. Arrays like strings already are addresses, so no `&`.
+## compile|compiler|interpret|gcc || Compiler vs this tool
+This page runs an **interpreter** in your browser that covers common teaching-level C. A real compiler (GCC) turns code into a program first and supports everything, including files and the full standard library.
+## #include||\bheader||stdio||int main||void main||return 0 || Basics: include & main
+~~~
+#include <stdio.h>   // printf, scanf
+int main() {
+    printf("Hello\n");
+    return 0;        // 0 = success
+}
+~~~
+Every C program starts at `main`.
+## bubble sort||sorting algorithm||selection sort || Bubble sort
+~~~
+for (int i = 0; i < n - 1; i++)
+    for (int j = 0; j < n - i - 1; j++)
+        if (a[j] > a[j+1]) { int t = a[j]; a[j] = a[j+1]; a[j+1] = t; }
+~~~
+Each pass pushes the largest remaining item to the end.
+## (example|sample|solution|code|show|write).*factorial||factorial.*(example|sample|solution|code) || Example: factorial
+~~~
+#include <stdio.h>
+int main() {
+    int n, i; long f = 1;
+    scanf("%d", &n);
+    for (i = 1; i <= n; i++) f *= i;
+    printf("%ld", f);
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write).*fibonacci||fibonacci.*(example|sample|solution|code) || Example: Fibonacci
+~~~
+#include <stdio.h>
+int main() {
+    int n, a = 0, b = 1, c;
+    scanf("%d", &n);
+    for (int i = 0; i < n; i++) { printf("%d ", a); c = a + b; a = b; b = c; }
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write).*prime||prime.*(example|sample|solution|code) || Example: prime number
+~~~
+#include <stdio.h>
+int main() {
+    int n, ok = 1;
+    scanf("%d", &n);
+    if (n < 2) ok = 0;
+    for (int i = 2; i * i <= n; i++) if (n % i == 0) { ok = 0; break; }
+    printf(ok ? "Prime" : "Not prime");
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write).*palindrome||palindrome.*(example|sample|solution|code) || Example: palindrome number
+~~~
+#include <stdio.h>
+int main() {
+    int n, t, r = 0;
+    scanf("%d", &n); t = n;
+    while (t > 0) { r = r * 10 + t % 10; t /= 10; }
+    printf(r == n ? "Palindrome" : "Not palindrome");
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write).*(swap)||swap.*(example|sample|solution|code) || Example: swap two numbers
+~~~
+#include <stdio.h>
+int main() {
+    int a = 5, b = 9, t;
+    t = a; a = b; b = t;
+    printf("%d %d", a, b);
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write).*(even|odd)||(even|odd).*(example|sample|solution|code) || Example: even or odd
+~~~
+#include <stdio.h>
+int main() {
+    int n;
+    scanf("%d", &n);
+    printf(n % 2 == 0 ? "Even" : "Odd");
+    return 0;
+}
+~~~
+## ^(hi+|hello+|hey+|hola|yo|sup|hai|hy|helo|hlo|hllo|heya|howdy|namaste|vanakkam|wassup|whatsup|gm|good (morning|evening|afternoon|day))\b || ~greet
+Hey! 👋 Ready to code? Ask me anything about C.
+---
+Hello! 😄 What are we building today?
+---
+Hi there! 💚 Write some code, or ask me a C question.
+## how are you||how r you||how are u||how r u||\bhru\b||how's it going||how is it going||whats up||what's up||how do you do||how have you been || ~
+I'm doing great, thanks for asking! 😄 Ready to help with your C code. What's next?
+---
+All good here 🤖💚 Got a C question for me?
+## thank|thanks|thx|tysm|\bty\b|\btq\b|\btks\b|thnx|thnks|thanx|thanku|thank u|nandri|dhanyavad|appreciate it|much appreciated || ~
+You're welcome! 😄 Keep going!
+---
+Anytime! 💚
+---
+Happy to help! 🤗 Ask me more whenever you like.
+## \bbye\b|goodbye|see you|good night|\bgn\b|cya|\btc\b|take care|ttyl|\bbb\b|\bbbye\b|catch you later|i('m| am) (leaving|going) || ~
+Bye! 👋 Come back soon and keep coding! 💚
+---
+See you! Happy coding! 🚀
+## who (made|created|built) you||your (name|creator)||who are you||are you (ai|a bot|real)||what are you || ~
+I'm **Code buddy** 🤖, a C tutor built into this page. I run right in your browser, answer C questions, check your code and help you debug.
+## \bjoke\b||make me laugh||funny || ~
+Why do programmers prefer dark mode? Because light attracts bugs 🐛😄
+---
+There are 10 kinds of people: those who understand binary and those who don't 😄
+---
+A C programmer walks into a bar... and segfaults before ordering 😅
+---
+Why did the C programmer quit? He didn't get arrays (a raise) 😂
+## motivat||i give up||this is hard||too hard||i am (tired|sad|bored|stuck)||frustrat||can'?t do || ~
+Hey, every programmer gets stuck, it's part of learning 💪 Take a breath. Show me where you're stuck, say **hint**, or ask me to **explain** it, and we'll fix it together.
+---
+You're doing better than you think! 🌟 Break it into tiny steps and do just one. Want a hint?
+## ^(ok+|okay|okey|cool|nice|great|wow|awesome|good|fine|k+|kk+|hmm+|super|sure|alright|got it|understood|perfect|done and dusted)[.! ]*$ || ~
+👍 Anything else you'd like to know?
+---
+Nice! 😄 Keep going, or ask me something.
+## \bsorry\b || ~
+No worries at all! 😊 Mistakes are how we learn.
+## you are (great|good|best|smart|awesome)||love you||good bot || ~
+Aww, thank you! 🥰 You're a great learner too.
+## (you are|you're|u r) (bad|stupid|dumb|useless)||useless bot||worst || ~
+Sorry about that 😔 Tell me what I got wrong and I'll try to do better. Or ask in a different way.
+## i (don'?t|do not) understand||confus||explain (again|simply)||simpler || ~
+No problem! 😊 Tell me which part is confusing (a word, a line, or a topic) and I'll explain it step by step with a small example.
+## topics||list of topics||what (topics|can i ask)||syllabus||all topics || All topics I know
+**Basics:** history, keywords, variables, data types, constants, comments, operators, type casting, escape sequences
+**Control:** if/else, switch, loops, break/continue, goto
+**Functions:** functions, recursion, call by value/reference, storage classes, scope
+**Data:** arrays, 2D arrays, strings, pointers, pointer arithmetic, malloc/free, structs, unions, enums, typedef, linked list
+**Libraries:** stdio, string.h, math.h, stdlib.h, ctype.h, time.h
+**Other:** preprocessor/macros, file handling, bitwise, command-line args, errors & debugging, undefined behaviour
+**Examples:** factorial, fibonacci, prime, palindrome, armstrong, gcd, leap year, swap, even/odd, largest, patterns, table, sorting, searching
+Just ask, e.g. "what is a union?" or "example of gcd".
+## history of c||who (invented|created|developed) c||dennis ritchie||when was c || History of C
+C was created by **Dennis Ritchie** at **Bell Labs** around **1972** to write the UNIX operating system. It grew from the languages B and BCPL. It was standardised as **ANSI C (C89)**, then C99, C11 and C17. C influenced C++, Java, C# and many others.
+## features of c||why (learn|use) c||advantages of c||what is c\b||c language || About C
+C is a fast, simple, **procedural**, compiled language close to the hardware. It's used for operating systems, embedded devices, drivers and games. Strengths: speed, portability, direct memory control, small size. Weak spots: no automatic memory management and no bounds checking, so you must be careful.
+## keywords?||reserved word || C keywords
+C89 has 32 keywords: `auto break case char const continue default do double else enum extern float for goto if int long register return short signed sizeof static struct switch typedef union unsigned void volatile while`. You can't use them as variable names.
+## variables?||identifier||naming rules||declare|declaration || Variables & naming rules
+A variable is a named box for a value.
+~~~
+int age = 20;
+float price = 9.5;
+char grade = 'A';
+~~~
+Names may use letters, digits and `_`, can't start with a digit, can't be a keyword, and are case-sensitive (`Age` ≠ `age`).
+## constants?||literals?||\bconst\b || Constants
+~~~
+const int MAX = 100;     // can't change
+#define PI 3.14159       // replaced by the preprocessor
+~~~
+Literals: `10` int, `10L` long, `3.5` double, `3.5f` float, `'a'` char, `"hi"` string.
+## comments?||// || Comments
+~~~
+// single line
+/* multi
+   line */
+~~~
+## type ?cast|casting|type conversion|\(float\)|\(int\) || Type casting
+~~~
+int a = 7, b = 2;
+float r = (float)a / b;   // 3.5, not 3
+~~~
+Mixed types are auto-promoted (`int` + `float` -> `float`). Assigning a float to an int drops the decimals.
+## escape sequence||\\n|\\t|new ?line|backslash || Escape sequences
+`\n` new line, `\t` tab, `\\` backslash, `\"` quote, `\'` apostrophe, `\0` end of string, `\r` return, `\a` beep. To print a real `%` use `%%`.
+## precedence||order of operations||associativity || Operator precedence
+Highest to lowest: `() [] ->` , `! ++ -- *(deref) &` , `* / %` , `+ -` , `< <= > >=` , `== !=` , `&&` , `||` , `?:` , `=`. When unsure, add brackets.
+## bitwise||shift operator||<<|>>|xor || Bitwise operators
+`&` AND, `|` OR, `^` XOR, `~` NOT, `<<` shift left (x2), `>>` shift right (/2).
+~~~
+printf("%d", 5 & 3);   // 1
+printf("%d", 1 << 3);  // 8
+~~~
+## ternary|conditional operator|\?: || Ternary operator
+~~~
+int max = (a > b) ? a : b;   // condition ? if true : if false
+~~~
+## \bbreak\b||\bcontinue\b||\bgoto\b || break, continue, goto
+`break` leaves the loop (or `case`). `continue` skips to the next round. `goto label;` jumps to a label, avoid it, loops are clearer.
+## storage class||\bstatic\b||\bextern\b||\bregister\b||\bauto\b||scope||global variable||local variable || Storage classes & scope
+**auto** (default local) lives while the block runs. **static** keeps its value between calls (or hides a global to its file). **extern** uses a global from another file. **register** hints "keep in a CPU register". **Local** variables exist only inside their `{ }`; **global** ones are visible everywhere.
+~~~
+void count() { static int n = 0; n++; printf("%d ", n); }  // 1 2 3...
+~~~
+## call by (value|reference)||pass by (value|reference)||swap.*function||pass.*pointer || Call by value vs reference
+C always passes a **copy**. To change the original, pass its address.
+~~~
+void swap(int *a, int *b) { int t = *a; *a = *b; *b = t; }
+swap(&x, &y);
+~~~
+## pointer arithmetic||p\+\+|p \+ 1||pointer to pointer||double pointer||\*\*p || Pointer arithmetic
+`p + 1` moves by **one element** (not one byte).
+~~~
+int a[3] = {1,2,3}, *p = a;
+printf("%d", *(p + 2));   // 3, same as a[2]
+int **pp = &p;            // pointer to a pointer
+~~~
+## function pointer||callback || Function pointers
+~~~
+int add(int a, int b) { return a + b; }
+int (*fp)(int, int) = add;
+printf("%d", fp(2, 3));   // 5
+~~~
+## void pointer||\bnull\b||dangling||wild pointer || NULL, void* and bad pointers
+`NULL` = pointer to nothing, check it before `*p`. `void *` can hold any address (cast before use). A **dangling** pointer points to freed memory, set it to `NULL` after `free`. A **wild** pointer is never initialised.
+## stack|heap|memory (layout|map)|where.*stored || Memory layout
+**Stack:** local variables, automatic. **Heap:** `malloc` memory, you free it. **Data/BSS:** globals and statics. **Code:** your instructions. Too deep recursion overflows the stack.
+## pass(ing)? array|array to function|array as (argument|parameter) || Passing arrays to functions
+An array decays to a pointer, so also pass the size.
+~~~
+int sum(int a[], int n) { int s = 0; for (int i = 0; i < n; i++) s += a[i]; return s; }
+~~~
+## \bunions?\b||bit ?field || Union
+Like a struct, but all members **share the same memory**, so only one holds a value at a time. Its size is the largest member.
+~~~
+union U { int i; float f; };
+~~~
+## \benums?\b || enum
+~~~
+enum Day { MON, TUE, WED };   // 0, 1, 2
+enum Day d = TUE;
+~~~
+## typedef || typedef
+Gives a type a new name.
+~~~
+typedef struct { int x, y; } Point;
+Point p = {1, 2};
+~~~
+## linked list||\bnode\b||singly || Linked list
+~~~
+struct Node { int data; struct Node *next; };
+struct Node *n = malloc(sizeof(struct Node));
+n->data = 5; n->next = NULL;
+~~~
+Each node stores data and the address of the next one. Use `->` with a pointer to a struct.
+## \bstack\b.*(data structure|push|pop)||\bqueue\b || Stack & queue
+**Stack** is LIFO (last in, first out): `push`, `pop`. **Queue** is FIFO: `enqueue`, `dequeue`. In C, build them with an array plus an index (`top`, or `front`/`rear`) or a linked list.
+## linear search||binary search||searching || Searching
+~~~
+// binary search on a SORTED array
+int lo = 0, hi = n - 1, pos = -1;
+while (lo <= hi) {
+    int mid = (lo + hi) / 2;
+    if (a[mid] == key) { pos = mid; break; }
+    else if (a[mid] < key) lo = mid + 1;
+    else hi = mid - 1;
+}
+~~~
+Linear search checks each item (O(n)); binary search halves the range each time (O(log n)) but needs sorted data.
+## insertion sort||merge sort||quick ?sort||sorting || Sorting algorithms
+Bubble/selection/insertion are simple O(n²). Merge sort and quick sort are faster, O(n log n). Insertion sort:
+~~~
+for (int i = 1; i < n; i++) {
+    int key = a[i], j = i - 1;
+    while (j >= 0 && a[j] > key) { a[j+1] = a[j]; j--; }
+    a[j+1] = key;
+}
+~~~
+## math\.h||\bsqrt\b||\bpow\b||\bfabs\b||\bfloor\b||\bceil\b||\babs\b || math.h functions
+~~~
+#include <math.h>
+sqrt(16)   // 4
+pow(2, 3)  // 8
+fabs(-2.5) // 2.5 (abs() is for int)
+floor(2.7) // 2     ceil(2.1) // 3
+~~~
+Also `sin cos tan log log10 exp round`. Results are `double`, print with `%f`.
+## string\.h||strncpy||strrev||strupr|toupper|tolower|ctype || string.h & ctype.h
+`strlen` length, `strcpy` copy, `strcat` join, `strcmp` compare (0 = equal), `strchr`/`strstr` find. From `<ctype.h>`: `toupper tolower isalpha isdigit isspace isupper`.
+## stdlib|\batoi\b|\bexit\(|\brand\b|\bsrand\b|random number || stdlib.h
+~~~
+#include <stdlib.h>
+srand(time(NULL));        // seed once (needs <time.h>)
+int r = rand() % 6 + 1;   // 1..6
+int n = atoi("42");       // text -> int
+exit(0);                  // stop the program
+~~~
+## time\.h|\btime\(|clock || time.h
+`time(NULL)` gives seconds since 1970, handy for seeding `srand`. `clock()` measures CPU time.
+## getchar|putchar|\bputs\b || getchar, putchar, puts
+~~~
+char c = getchar();   // read one char
+putchar(c);           // print one char
+puts("hello");        // print string + newline
+~~~
+## preprocessor|macros?|#define|#ifdef|#ifndef|include guard || Preprocessor & macros
+Lines starting with `#` run before compiling.
+~~~
+#define SQUARE(x) ((x) * (x))
+#ifndef MYHEAD_H
+#define MYHEAD_H
+#endif
+~~~
+Always wrap macro arguments in brackets.
+## command.line|argc|argv || Command-line arguments
+~~~
+int main(int argc, char *argv[]) { printf("%s", argv[0]); }
+~~~
+`argc` = count, `argv` = the words. Not usable in this browser sandbox.
+## (types? of )?errors?|runtime error|logical error|logic error|compile.?time || Types of errors
+**Syntax/compile errors** break the grammar (missing `;`). **Runtime errors** crash while running (divide by zero, segfault). **Logic errors** run fine but give wrong answers. Logic errors are the hardest, print values with `printf` to see what's happening.
+## debug|how to find (bug|error) || Debugging tips
+1) Read the first error only, fix it, rerun. 2) Look at the line **before** it. 3) `printf` your variables. 4) Test tiny inputs. 5) Check loop limits and `=` vs `==`. 6) Say **check my code** and I'll scan it.
+## undefined behavio|overflow|float(ing)? precision|0\.1 ?\+ ?0\.2 || Undefined behaviour & precision
+Out-of-range indexes, signed overflow, and using freed memory are **undefined behaviour**, anything can happen. Floats can't store every decimal exactly (`0.1 + 0.2` ≈ `0.30000000000000004`), so don't compare floats with `==`; use a small tolerance.
+## (example|sample|solution|code|show|write|program).*(armstrong)||armstrong.*(example|sample|solution|code|program) || Example: Armstrong number
+~~~
+#include <stdio.h>
+int main() {
+    int n, t, r, s = 0;
+    scanf("%d", &n); t = n;
+    while (t > 0) { r = t % 10; s += r * r * r; t /= 10; }
+    printf(s == n ? "Armstrong" : "Not Armstrong");
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(gcd|hcf|lcm)||(gcd|hcf|lcm).*(example|sample|solution|code|program) || Example: GCD
+~~~
+#include <stdio.h>
+int main() {
+    int a, b;
+    scanf("%d %d", &a, &b);
+    while (b != 0) { int t = b; b = a % b; a = t; }
+    printf("GCD = %d", a);
+    return 0;
+}
+~~~
+LCM = (a × b) / GCD.
+## (example|sample|solution|code|show|write|program).*leap||leap.*(example|sample|solution|code|program) || Example: leap year
+~~~
+#include <stdio.h>
+int main() {
+    int y;
+    scanf("%d", &y);
+    if ((y % 4 == 0 && y % 100 != 0) || y % 400 == 0) printf("Leap year");
+    else printf("Not a leap year");
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(sum of digits)||sum of digits.*(example|sample|solution|code|program) || Example: sum of digits
+~~~
+#include <stdio.h>
+int main() {
+    int n, s = 0;
+    scanf("%d", &n);
+    while (n > 0) { s += n % 10; n /= 10; }
+    printf("%d", s);
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(reverse (a )?(number|digits?))||reverse (a )?(number|digits?).*(example|sample|solution|code|program) || Example: reverse a number
+~~~
+#include <stdio.h>
+int main() {
+    int n, r = 0;
+    scanf("%d", &n);
+    while (n > 0) { r = r * 10 + n % 10; n /= 10; }
+    printf("%d", r);
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(reverse (a )?string)||reverse (a )?string.*(example|sample|solution|code|program) || Example: reverse a string
+~~~
+#include <stdio.h>
+#include <string.h>
+int main() {
+    char s[100]; scanf("%s", s);
+    for (int i = strlen(s) - 1; i >= 0; i--) putchar(s[i]);
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(largest|biggest|maximum|greatest)||(largest|biggest|maximum|greatest).*(example|sample|solution|code|program) || Example: largest of three
+~~~
+#include <stdio.h>
+int main() {
+    int a, b, c, m;
+    scanf("%d %d %d", &a, &b, &c);
+    m = a;
+    if (b > m) m = b;
+    if (c > m) m = c;
+    printf("%d", m);
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(pattern|triangle|pyramid|star)||(pattern|triangle|pyramid|star).*(example|sample|solution|code|program) || Example: star triangle
+~~~
+#include <stdio.h>
+int main() {
+    int n = 5;
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= i; j++) printf("* ");
+        printf("\n");
+    }
+    return 0;
+}
+~~~
+Print spaces first in each row to make a pyramid.
+## (example|sample|solution|code|show|write|program).*(table|multiplication)||(table|multiplication).*(example|sample|solution|code|program) || Example: multiplication table
+~~~
+#include <stdio.h>
+int main() {
+    int n;
+    scanf("%d", &n);
+    for (int i = 1; i <= 10; i++) printf("%d x %d = %d\n", n, i, n * i);
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(calculator)||calculator.*(example|sample|solution|code|program) || Example: calculator
+~~~
+#include <stdio.h>
+int main() {
+    float a, b; char op;
+    scanf("%f %c %f", &a, &op, &b);
+    switch (op) {
+        case '+': printf("%.2f", a + b); break;
+        case '-': printf("%.2f", a - b); break;
+        case '*': printf("%.2f", a * b); break;
+        case '/': printf("%.2f", a / b); break;
+        default: printf("Invalid");
+    }
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(vowel)||vowel.*(example|sample|solution|code|program) || Example: count vowels
+~~~
+#include <stdio.h>
+#include <ctype.h>
+int main() {
+    char s[100]; int c = 0;
+    scanf("%s", s);
+    for (int i = 0; s[i]; i++) if (strchr("aeiou", tolower(s[i]))) c++;
+    printf("%d", c);
+    return 0;
+}
+~~~
+Add `#include <string.h>` for `strchr`.
+## (example|sample|solution|code|show|write|program).*(temperature|celsius|fahrenheit)||(celsius|fahrenheit).*(example|sample|solution|code|program) || Example: temperature conversion
+~~~
+#include <stdio.h>
+int main() {
+    float c;
+    scanf("%f", &c);
+    printf("%.1f F", c * 9 / 5 + 32);
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(simple interest|area of (a )?circle|average)||(simple interest|area of (a )?circle).*(example|sample|solution|code|program) || Example: simple formulas
+~~~
+float p = 1000, r = 5, t = 2;
+printf("SI = %.2f\n", p * r * t / 100);       // simple interest
+float rad = 3;
+printf("Area = %.2f", 3.14159 * rad * rad);   // circle area
+~~~
+## (example|sample|solution|code|show|write|program).*(hello)||hello world || Example: Hello World
+~~~
+#include <stdio.h>
+int main() {
+    printf("Hello, World!\n");
+    return 0;
+}
+~~~
+## (example|sample|solution|code|show|write|program).*(sum of (two|2)|add (two|2)|addition)||(add|sum).*two numbers || Example: add two numbers
+~~~
+#include <stdio.h>
+int main() {
+    int a, b;
+    scanf("%d %d", &a, &b);
+    printf("%d", a + b);
+    return 0;
+}
+~~~
+## ^(yes|yeah|yep|yup|ya|yea|y|sure)[.! ]*$ || ~
+Great! 👍 Tell me more, or ask me a C question.
+## ^(no|nope|nah|n)[.! ]*$ || ~
+Okay, no problem! 👍 I'm here whenever you need me.
+## ^(lol+|haha+|hehe+|lmao|rofl|😂+|🤣+)[.! ]*$ || ~
+😄😄 Glad you're having fun! Back to coding?
+## ^(np|no problem|no worries|you'?re welcome|welcome|yw)[.! ]*$ || ~
+😊 Anytime!
+## (and )?(what about|how about) you|hbu|wbu || ~
+I'm great, thanks! 😄 Always ready to talk C.
+## ^(please|pls|plz)[.! ]*$ || ~
+Sure! 😊 What would you like help with?
+## ^(bro|dude|bruh|buddy|friend|mate|boss)[.! ]*$ || ~
+Yes? 😄 I'm listening. What do you need?
+## ^(hello+|hi+|hey+)[ ,]*(bro|dude|buddy|there|code buddy|bot|friend)[.! ]*$ || ~greet
+Hey! 👋 Great to see you!
+</script>
+</body>
+</html>
